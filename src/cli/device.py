@@ -5,6 +5,6 @@ from src.cli.console import echo
 device = Typer(help="Device commands")
 
 
-@device.command()
+@device.command("scan", help="Scan the device for open ports")
 def scan():
     echo(f"Scanning device...")

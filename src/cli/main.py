@@ -14,7 +14,7 @@ app.add_typer(network, name="network")
 app.add_typer(device, name="device")
 
 
-@app.command()
+@app.command("init", help="Initialize the sqlite database")
 def init():
     init_db(init=True)
 
