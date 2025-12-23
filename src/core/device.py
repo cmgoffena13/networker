@@ -8,7 +8,7 @@ from scapy.all import ARP, IP, TCP, UDP, Ether, conf, sr, srp
 from tqdm import tqdm
 from typer import Abort, Exit
 
-from src.cli.console import console, echo
+from src.cli.console import echo
 from src.database.device import db_save_device
 from src.database.device_port import db_list_device_ports, db_save_device_ports
 from src.models.device import Device
@@ -20,7 +20,7 @@ from src.settings import config
 logger = structlog.getLogger(__name__)
 
 
-def get_vendor_name(
+def get_mac_vendor_name(
     mac_address: str,
 ) -> Optional[str]:
     oui = mac_address[:8]
@@ -42,6 +42,14 @@ def get_vendor_name(
     except Exception as e:
         logger.error(f"Error getting vendor name for {mac_address}: {e}")
         return None
+
+
+def get_os_fingerprint(device: Device) -> Optional[str]:
+    pass
+
+
+def get_snmp_info(device: Device) -> Optional[str]:
+    pass
 
 
 def get_router_mac() -> Optional[str]:
@@ -88,13 +96,13 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
         else:
             is_router = False
 
-        vendor_name = get_vendor_name(mac)
+        vendor_name = get_mac_vendor_name(mac)
         device = Device(
             network_id=network.id,
             device_mac=mac,
             device_ip=ip,
             is_router=is_router,
-            vendor_name=vendor_name,
+            mac_vendor_name=vendor_name,
         )
         devices.append(device)
     echo(f"Found {len(devices)} devices on network: {network.network_address}")
@@ -125,7 +133,7 @@ def get_open_ports(
         with tqdm(
             total=total_batches,
             colour="green",
-            bar_format="{percentage:3.0f}%|{bar}| ETA [{remaining}]",
+            bar_format="{percentage:3.0f}%|{bar}| ETA [{remaining}]\t\t",
         ) as pbar:
             for index in range(0, len(ports), config.PORT_SCAN_BATCH_SIZE):
                 batch = ports[index : index + config.PORT_SCAN_BATCH_SIZE]

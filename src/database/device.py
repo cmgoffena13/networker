@@ -23,7 +23,7 @@ def db_save_device(device: Device) -> Device:
         if existing:
             logger.debug(f"Device already exists, updating...")
             existing.device_ip = device.device_ip
-            existing.vendor_name = device.vendor_name
+            existing.mac_vendor_name = device.mac_vendor_name
             existing.is_router = device.is_router
             existing.updated_at = now()
             session.add(existing)

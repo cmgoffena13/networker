@@ -679,6 +679,8 @@ dependencies = [
     { name = "polars" },
     { name = "pydantic-extra-types", extra = ["pendulum"] },
     { name = "pydantic-settings" },
+    { name = "pysnmp" },
+    { name = "python-nmap" },
     { name = "rich" },
     { name = "scapy" },
     { name = "sqlmodel" },
@@ -707,6 +709,8 @@ requires-dist = [
     { name = "polars", specifier = ">=1.36.1" },
     { name = "pydantic-extra-types", extras = ["pendulum"], specifier = ">=2.10.6" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
+    { name = "pysnmp", specifier = ">=7.1.22" },
+    { name = "python-nmap", specifier = ">=0.7.1" },
     { name = "rich", specifier = ">=14.2.0" },
     { name = "scapy", specifier = ">=2.6.1" },
     { name = "sqlmodel", specifier = ">=0.0.27" },
@@ -1115,6 +1119,18 @@ crypto = [
 ]
 
 [[package]]
+name = "pysnmp"
+version = "7.1.22"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyasn1" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c5/f7/63a4833b675f3f85296d85f2fddaed93d76799f29a813a2d5ca2bbe7fc50/pysnmp-7.1.22.tar.gz", hash = "sha256:37ac595c7f0c1c00514505939b4dcf5b4fd5a9ffe51b0349f60bb640c11b0f77", size = 259230, upload-time = "2025-10-26T22:09:56.413Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/25/da/9b6bc9517f6a69d03b70f43c4cfd1cca6289fdccabcf648204f2b0c6bc9b/pysnmp-7.1.22-py3-none-any.whl", hash = "sha256:57e704a6ba2bbf571d16cd5dc08b89bb3fa0ebeb5f4f26b87fececad3b3de7a6", size = 343380, upload-time = "2025-10-26T22:09:54.816Z" },
+]
+
+[[package]]
 name = "pytest"
 version = "9.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1163,6 +1179,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/f0/26/19cadc79a718c5edb
 wheels = [
     { url = "https://files.pythonhosted.org/packages/14/1b/a298b06749107c305e1fe0f814c6c74aea7b2f1e10989cb30f544a1b3253/python_dotenv-1.2.1-py3-none-any.whl", hash = "sha256:b81ee9561e9ca4004139c6cbba3a238c32b03e4894671e181b671e8cb8425d61", size = 21230, upload-time = "2025-10-26T15:12:09.109Z" },
 ]
+
+[[package]]
+name = "python-nmap"
+version = "0.7.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f7/1b/8e6b3d1461331e4e8600faf099e7c62ba3c1603987dafdd558681fb8ba37/python-nmap-0.7.1.tar.gz", hash = "sha256:f75af6b91dd8e3b0c31f869db32163f62ada686945e5b7c25f84bc0f7fad3b64", size = 44366, upload-time = "2021-10-26T18:40:26.488Z" }
 
 [[package]]
 name = "pyyaml"
