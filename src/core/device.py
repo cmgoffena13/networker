@@ -4,44 +4,36 @@ from typing import List, Optional
 
 import httpx
 import structlog
-from scapy.all import ARP, Ether, conf, srp
+from scapy.all import ARP, IP, TCP, UDP, Ether, conf, sr, srp
+from tqdm import tqdm
+from typer import Abort, Exit
 
-from src.cli.console import echo
+from src.cli.console import console, echo
 from src.database.device import db_save_device
+from src.database.device_port import db_save_device_ports
 from src.models.device import Device
+from src.models.device_port import DevicePort
 from src.models.network import Network
+from src.protocol import Protocol
+from src.settings import config
 
 logger = structlog.getLogger(__name__)
 
 
-def get_vendor_name(mac_address: str, api_key: Optional[str] = None) -> Optional[str]:
+def get_vendor_name(
+    mac_address: str,
+) -> Optional[str]:
     oui = mac_address[:8]
     logger.debug(f"Getting vendor name for OUI: {oui}")
     try:
         url = f"https://api.maclookup.app/v2/macs/{oui}/company/name"
-        params = {}
-        if api_key:
-            params["apiKey"] = api_key
-
-        response = httpx.get(url, params=params, timeout=10)
+        response = httpx.get(url, timeout=10)
 
         if response.status_code == 200:
             vendor_name = response.text.strip()
             logger.debug(f"Vendor name for {mac_address}: {vendor_name}")
             time.sleep(0.6)  # Rate limit is 2 requests per second
             return vendor_name if vendor_name else None
-        elif response.status_code == 400:
-            logger.warning(f"Invalid MAC address format: {mac_address}")
-            return None
-        elif response.status_code == 401:
-            logger.warning("Invalid API key for maclookup.app")
-            return None
-        elif response.status_code == 409:
-            logger.warning("Rate limit exceeded for maclookup.app")
-            return None
-        elif response.status_code == 429:
-            logger.warning("Rate limit exceeded for maclookup.app")
-            return None
         else:
             logger.warning(
                 f"Unexpected response from maclookup.app: {response.status_code}"
@@ -77,7 +69,6 @@ def get_router_mac() -> Optional[str]:
 
 
 def get_devices_on_network(network: Network, save: bool = False) -> List[Device]:
-    logger.debug(f"Getting devices on network: {network.network_address}...")
     echo(f"Getting devices on network: {str(network.network_address)}...")
     devices = []
 
@@ -106,12 +97,77 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
             vendor_name=vendor_name,
         )
         devices.append(device)
-    logger.debug(f"Found {len(devices)} devices on network: {network.network_address}")
-    echo(f"Found {len(devices)} devices.")
+    echo(f"Found {len(devices)} devices on network: {network.network_address}")
     if save:
         logger.debug("Saving devices...")
         for device in devices:
             db_save_device(device)
         echo("Devices info logged to database.")
-        logger.debug("Devices saved")
     return devices
+
+
+def get_open_ports(device: Device, save: bool = False) -> List[DevicePort]:
+    device_ports = []
+    ports = list(range(1, 65536))
+    total_batches = (
+        len(ports) + config.PORT_SCAN_BATCH_SIZE - 1
+    ) // config.PORT_SCAN_BATCH_SIZE
+    try:
+        device_name = device.device_name or "Unknown"
+        echo(
+            f"Scanning device (MAC: {device.device_mac}, Name: {device_name}) for open ports..."
+        )
+        with tqdm(
+            total=total_batches,
+            colour="green",
+        ) as pbar:
+            for index in range(0, len(ports), config.PORT_SCAN_BATCH_SIZE):
+                batch = ports[index : index + config.PORT_SCAN_BATCH_SIZE]
+                batch_num = (index // config.PORT_SCAN_BATCH_SIZE) + 1
+                logger.debug(
+                    f"Processing batch {batch_num}/{total_batches} (ports {batch[0]}-{batch[-1]})"
+                )
+                tcp_packets = [
+                    IP(dst=device.device_ip) / TCP(dport=port, flags="S")
+                    for port in batch
+                ]
+                answered, unanswered = sr(tcp_packets, timeout=1, verbose=False)
+                for sent, received in answered:
+                    if received.haslayer(TCP) and received[TCP].flags == 18:
+                        port = received[TCP].sport
+                        device_port = DevicePort(
+                            device_id=device.id,
+                            port_number=port,
+                            protocol=Protocol.TCP,
+                        )
+                        device_ports.append(device_port)
+                        logger.debug(
+                            f"Found open TCP port: {port} on device: {device.device_mac}"
+                        )
+                udp_packets = [
+                    IP(dst=device.device_ip) / UDP(dport=port) for port in batch
+                ]
+                answered, unanswered = sr(udp_packets, timeout=0.5, verbose=False)
+                for sent, received in answered:
+                    if received.haslayer(UDP):
+                        port = received[UDP].sport
+                        device_port = DevicePort(
+                            device_id=device.id,
+                            port_number=port,
+                            protocol=Protocol.UDP,
+                        )
+                        device_ports.append(device_port)
+                        logger.debug(
+                            f"Found open UDP port: {port} on device: {device.device_mac}"
+                        )
+                pbar.update(1)
+        if save:
+            db_save_device_ports(device_ports, device.id)
+            echo("Open ports saved to database.")
+    except KeyboardInterrupt:
+        raise Abort()
+    except Exception as e:
+        logger.error(f"Error getting open ports for device: {device.device_mac}: {e}")
+        raise Exit(code=1)
+    echo(f"Found {len(device_ports)} open ports on device: {device.device_mac}")
+    return device_ports

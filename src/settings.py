@@ -70,6 +70,9 @@ class GlobalConfig(BaseConfig):
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
     GOOGLE_CLOUD_PROJECT: Optional[str] = None
 
+    # APP settings
+    PORT_SCAN_BATCH_SIZE: int = 500
+
 
 class DevConfig(GlobalConfig):
     LOG_LEVEL: LogLevel = "DEBUG"

@@ -25,6 +25,11 @@ def setup_logging(log_level: str = None):
         category=UserWarning,
         module="pydantic.main",
     )
+    warnings.filterwarnings(
+        "ignore",
+        message=".*MAC address to reach destination not found. Using broadcast.*",
+        module="scapy.arch",
+    )
 
     structlog.configure(
         processors=[

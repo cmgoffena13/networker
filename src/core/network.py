@@ -96,7 +96,6 @@ def get_netmask() -> Optional[str]:
 
 
 def get_network_info() -> Optional[ipaddress.IPv4Network]:
-    logger.debug("Getting network...")
     echo("Finding network...")
     local_ip = get_if_addr(conf.iface)
     netmask = get_netmask()
@@ -107,8 +106,7 @@ def get_network_info() -> Optional[ipaddress.IPv4Network]:
         logger.debug(f"Network: {network}")
         echo(f"Network found: {str(network)}")
         return network
-    logger.debug("No network found")
-    echo("No network found")
+    echo("No network found.")
     return None
 
 
@@ -141,8 +139,6 @@ def get_network(save: bool = False) -> Optional[Network]:
         public_ip=get_public_ip(),
     )
     if save:
-        logger.debug("Saving network...")
         network = db_save_network(network)
         echo("Network info logged to database.")
-        logger.debug("Network saved")
     return network

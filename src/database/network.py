@@ -4,7 +4,6 @@ import structlog
 from pendulum import now
 from sqlmodel import Session, select
 
-from src.cli.console import echo
 from src.database.db import engine
 from src.models.network import Network
 
@@ -21,6 +20,7 @@ def db_save_network(network: Network) -> Network:
         existing = session.exec(statement).first()
 
         if existing:
+            logger.debug(f"Network already exists, updating...")
             existing.network_address = network.network_address
             existing.public_ip = network.public_ip
             existing.broadcast_address = network.broadcast_address
@@ -31,19 +31,19 @@ def db_save_network(network: Network) -> Network:
             try:
                 session.commit()
                 session.refresh(existing)
-                return existing
             except Exception:
                 session.rollback()
                 raise
+            return existing
         else:
             session.add(network)
             try:
                 session.commit()
                 session.refresh(network)
-                return network
             except Exception:
                 session.rollback()
                 raise
+            return network
 
 
 def db_list_networks() -> List[Network]:

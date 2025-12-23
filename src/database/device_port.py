@@ -1,5 +1,7 @@
+from typing import List
+
 import structlog
-from sqlmodel import Session, select
+from sqlmodel import Session, delete
 
 from src.database.db import engine
 from src.models.device_port import DevicePort
@@ -7,27 +9,18 @@ from src.models.device_port import DevicePort
 logger = structlog.getLogger(__name__)
 
 
-def db_save_device_port(device_port: DevicePort):
-    logger.debug(f"Saving device port: {device_port}")
+def db_save_device_ports(device_ports: List[DevicePort], device_id: int):
+    logger.debug(f"Saving open device ports for device: {device_id}")
     with Session(engine) as session:
-        statement = select(DevicePort).where(
-            DevicePort.device_id == device_port.device_id,
-            DevicePort.port_number == device_port.port_number,
-            DevicePort.protocol == device_port.protocol,
-        )
-        existing = session.exec(statement).first()
+        savepoint = session.begin_nested()
+        try:
+            session.exec(delete(DevicePort).where(DevicePort.device_id == device_id))
 
-        if existing:
-            session.add(existing)
-            try:
-                session.commit()
-            except Exception:
-                session.rollback()
-                raise
-        else:
-            session.add(device_port)
-            try:
-                session.commit()
-            except Exception:
-                session.rollback()
-                raise
+            session.add_all(device_ports)
+
+            savepoint.commit()
+            session.commit()
+        except Exception:
+            savepoint.rollback()
+            session.rollback()
+            raise

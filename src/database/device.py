@@ -4,7 +4,6 @@ import structlog
 from pendulum import now
 from sqlmodel import Session, select
 
-from src.cli.console import echo
 from src.database.db import engine
 from src.exceptions import DeviceNotFoundError
 from src.models.device import Device
@@ -22,8 +21,8 @@ def db_save_device(device: Device) -> Device:
         existing = session.exec(statement).first()
 
         if existing:
+            logger.debug(f"Device already exists, updating...")
             existing.device_ip = device.device_ip
-            existing.device_name = device.device_name
             existing.vendor_name = device.vendor_name
             existing.is_router = device.is_router
             existing.updated_at = now()
@@ -31,19 +30,19 @@ def db_save_device(device: Device) -> Device:
             try:
                 session.commit()
                 session.refresh(existing)
-                return existing
             except Exception:
                 session.rollback()
                 raise
+            return existing
         else:
             session.add(device)
             try:
                 session.commit()
                 session.refresh(device)
-                return device
             except Exception:
                 session.rollback()
                 raise
+            return device
 
 
 def db_update_device(id: int, **kwargs: Any) -> Device:
@@ -62,10 +61,10 @@ def db_update_device(id: int, **kwargs: Any) -> Device:
             try:
                 session.commit()
                 session.refresh(existing)
-                return existing
             except Exception:
                 session.rollback()
                 raise
+            return existing
         else:
             raise DeviceNotFoundError(f"Device not found: {id}")
 
@@ -73,3 +72,8 @@ def db_update_device(id: int, **kwargs: Any) -> Device:
 def db_list_devices() -> List[Device]:
     with Session(engine) as session:
         return session.exec(select(Device)).all()
+
+
+def db_get_device(id: int) -> Device:
+    with Session(engine) as session:
+        return session.exec(select(Device).where(Device.id == id)).first()
