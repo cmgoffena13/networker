@@ -11,7 +11,7 @@ matrix_theme = Theme(
         "log.message": "green",
     }
 )
-console = Console(theme=matrix_theme, style="green")
+console = Console(theme=matrix_theme)
 
 
 def echo(message: str, **kwargs):

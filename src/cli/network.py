@@ -1,7 +1,9 @@
 from typer import Option, Typer
 
+from src.cli.console import echo
 from src.core.device import get_devices_on_network
 from src.core.network import get_network
+from src.database.network import db_list_networks
 from src.logging_conf import set_log_level
 
 network_typer = Typer(help="Network commands")
@@ -40,4 +42,6 @@ def list(
 ):
     if verbose:
         set_log_level("DEBUG")
-    pass
+    networks = db_list_networks()
+    for network in networks:
+        echo(f"Network: {network.model_dump_json(indent=2)}")

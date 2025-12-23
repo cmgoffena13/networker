@@ -1,7 +1,10 @@
+from typing import List
+
 import structlog
 from pendulum import now
 from sqlmodel import Session, select
 
+from src.cli.console import echo
 from src.database.db import engine
 from src.models.network import Network
 
@@ -41,3 +44,11 @@ def db_save_network(network: Network) -> Network:
             except Exception:
                 session.rollback()
                 raise
+
+
+def db_list_networks() -> List[Network]:
+    echo("Listing networks...")
+    with Session(engine) as session:
+        statement = select(Network)
+        networks = session.exec(statement).all()
+        return networks
