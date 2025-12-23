@@ -17,5 +17,5 @@ setup:
 upgrade:
 	uv sync --upgrade --all-extras
 
-run:
-	uv run main.py
+seed:
+	uv run -- python -m src.seeds.main

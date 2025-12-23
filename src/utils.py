@@ -1,15 +1,15 @@
-import logging
 import os
 import time
 from functools import wraps
 
 import boto3
+import structlog
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from botocore.exceptions import ClientError
 from google.cloud import secretmanager
 
-logger = logging.getLogger(__name__)
+logger = structlog.getLogger(__name__)
 
 
 def retry(attempts: int = 3, delay: float = 0.25, backoff: float = 2.0):

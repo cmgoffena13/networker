@@ -1,12 +1,25 @@
+import logging
+
+from rich.logging import RichHandler
 from typer import Typer
 
+from src.cli.console import console
+from src.cli.network import network
 from src.logging_conf import setup_logging
 
 app = Typer(help="Networker CLI - Interact with your local network")
+app.add_typer(network, name="network")
 
 
 def main() -> None:
     setup_logging()
+    root_logger = logging.getLogger("src")
+    for handler in root_logger.handlers:
+        if isinstance(handler, RichHandler):
+            handler.console = console
+            handler.show_time = False
+            handler.show_path = False
+            handler.highlighter = None
     app()
 
 
