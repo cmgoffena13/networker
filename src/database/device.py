@@ -23,7 +23,6 @@ def db_save_device(device: Device) -> Device:
 
         if existing:
             existing.device_ip = device.device_ip
-            existing.is_router = device.is_router
             existing.updated_at = now()
             session.add(existing)
             try:
