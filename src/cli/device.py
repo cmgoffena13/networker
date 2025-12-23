@@ -3,9 +3,15 @@ import json
 import structlog
 from typer import Exit, Option, Typer
 
-from src.cli.console import console, display_port_info, echo
+from src.cli.console import (
+    console,
+    display_port_info,
+    echo,
+    format_device_with_ports_json,
+)
 from src.core.device import get_open_ports
 from src.database.device import db_get_device, db_list_devices, db_update_device
+from src.database.device_port import db_list_device_ports
 from src.logging_conf import set_log_level
 
 logger = structlog.getLogger(__name__)
@@ -45,7 +51,8 @@ def list(
         devices = db_list_devices()
         echo(f"Listing {len(devices)} devices...")
         for device in devices:
-            echo(f"Device: {device.model_dump_json(indent=2)}")
+            device_ports = db_list_device_ports(device.id)
+            echo(format_device_with_ports_json(device, device_ports))
     except Exception as e:
         logger.error(f"Error listing devices: {e}")
         raise Exit(code=1)
