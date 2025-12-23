@@ -33,10 +33,12 @@ class DevicePort(SQLModel, table=True):
 
     __table_args__ = (
         Index(
-            "ux_device_id_port_number_protocol",
-            "device_id",
+            "ix_port_number_protocol",
             "port_number",
             "protocol",
-            unique=True,
+        ),
+        Index(
+            "idx_device_id",
+            "device_id",
         ),
     )

@@ -15,6 +15,7 @@ device_typer = Typer(help="Device commands")
 
 @device_typer.command("scan", help="Scan the device for open ports")
 def scan(
+    log: bool = Option(False, "--log", "-l", help="Log the device scan results"),
     verbose: bool = Option(
         False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
     ),
@@ -24,7 +25,12 @@ def scan(
         set_log_level("DEBUG")
     try:
         device = db_get_device(device_id)
-        get_open_ports(device)
+        device_ports = get_open_ports(device, save=log)
+        for device_port, service_name in device_ports:
+            service_info = f" - {service_name}" if service_name else ""
+            echo(
+                f"Open Port: {device_port.port_number} ({device_port.protocol.value}){service_info}"
+            )
     except Exception as e:
         logger.error(f"Error scanning device: {e}")
         raise Exit(code=1)

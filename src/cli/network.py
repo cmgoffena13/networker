@@ -40,7 +40,12 @@ def scan(
         network = get_network(save=log)
         devices = get_devices_on_network(network, save=log)
         for device in devices:
-            get_open_ports(device, save=log)
+            device_ports = get_open_ports(device, save=log)
+            for device_port, service_name in device_ports:
+                service_info = f" - {service_name}" if service_name else ""
+                echo(
+                    f"Open Port: {device_port.port_number} ({device_port.protocol.value}){service_info}"
+                )
     except Exception as e:
         logger.error(f"Error scanning network: {e}")
         raise Exit(code=1)

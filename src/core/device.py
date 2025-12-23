@@ -1,6 +1,6 @@
 import ipaddress
 import time
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import httpx
 import structlog
@@ -10,7 +10,7 @@ from typer import Abort, Exit
 
 from src.cli.console import console, echo
 from src.database.device import db_save_device
-from src.database.device_port import db_save_device_ports
+from src.database.device_port import db_list_device_ports, db_save_device_ports
 from src.models.device import Device
 from src.models.device_port import DevicePort
 from src.models.network import Network
@@ -106,7 +106,9 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
     return devices
 
 
-def get_open_ports(device: Device, save: bool = False) -> List[DevicePort]:
+def get_open_ports(
+    device: Device, save: bool = False
+) -> List[Tuple[DevicePort, str | None]]:
     device_ports = []
     ports = list(range(1, 65536))
     total_batches = (
@@ -164,10 +166,13 @@ def get_open_ports(device: Device, save: bool = False) -> List[DevicePort]:
         if save:
             db_save_device_ports(device_ports, device.id)
             echo("Open ports saved to database.")
+            result = db_list_device_ports(device.id)
+        else:
+            result = [(dp, None) for dp in device_ports]
     except KeyboardInterrupt:
         raise Abort()
     except Exception as e:
         logger.error(f"Error getting open ports for device: {device.device_mac}: {e}")
         raise Exit(code=1)
-    echo(f"Found {len(device_ports)} open ports on device: {device.device_mac}")
-    return device_ports
+    echo(f"Found {len(result)} open ports on device: {device.device_mac}")
+    return result

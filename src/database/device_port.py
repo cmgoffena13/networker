@@ -1,10 +1,11 @@
-from typing import List
+from typing import List, Tuple
 
 import structlog
-from sqlmodel import Session, delete
+from sqlmodel import Session, delete, select
 
 from src.database.db import engine
 from src.models.device_port import DevicePort
+from src.models.port import Port
 
 logger = structlog.getLogger(__name__)
 
@@ -24,3 +25,17 @@ def db_save_device_ports(device_ports: List[DevicePort], device_id: int):
             savepoint.rollback()
             session.rollback()
             raise
+
+
+def db_list_device_ports(device_id: int) -> List[Tuple[DevicePort, str | None]]:
+    logger.debug(f"Listing open device ports for device: {device_id}")
+    with Session(engine) as session:
+        return session.exec(
+            select(DevicePort, Port.service_name)
+            .outerjoin(
+                Port,
+                (DevicePort.port_number == Port.port_number)
+                & (DevicePort.protocol == Port.protocol),
+            )
+            .where(DevicePort.device_id == device_id)
+        ).all()
