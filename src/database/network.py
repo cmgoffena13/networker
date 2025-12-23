@@ -47,7 +47,6 @@ def db_save_network(network: Network) -> Network:
 
 
 def db_list_networks() -> List[Network]:
-    echo("Listing networks...")
     with Session(engine) as session:
         statement = select(Network)
         networks = session.exec(statement).all()

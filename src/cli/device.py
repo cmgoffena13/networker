@@ -29,6 +29,7 @@ def list(
     if verbose:
         set_log_level("DEBUG")
     devices = db_list_devices()
+    echo(f"Listing {len(devices)} devices...")
     for device in devices:
         echo(f"Device: {device.model_dump_json(indent=2)}")
 

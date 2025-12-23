@@ -71,7 +71,6 @@ def db_update_device(id: int, **kwargs: Any) -> Device:
 
 
 def db_list_devices() -> List[Device]:
-    echo("Listing devices...")
     with Session(engine) as session:
         statement = select(Device)
         devices = session.exec(statement).all()

@@ -43,5 +43,6 @@ def list(
     if verbose:
         set_log_level("DEBUG")
     networks = db_list_networks()
+    echo(f"Listing {len(networks)} networks...")
     for network in networks:
         echo(f"Network: {network.model_dump_json(indent=2)}")
