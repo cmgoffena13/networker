@@ -6,7 +6,7 @@ from src.core.network import get_network
 network = Typer(help="Network commands")
 
 
-@network.command("init", help="Initialize the network and devices")
+@network.command("update", help="Update the network and devices information")
 def init():
     get_network(save=True)
     get_devices_on_network(network, save=True)
