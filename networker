@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Run the networker CLI without installing the package
+sudo uv run -- python -m src.cli.main "$@"

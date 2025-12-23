@@ -3,8 +3,23 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# JSON (JSON has no place here) - GCP Credentials, etc.
+*.json
+
 # C extensions
 *.so
+
+# Profiling
+profile.html
+profile.json
+
+# MLflow
+mlruns/
+mlflow.db
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Distribution / packaging
 .Python

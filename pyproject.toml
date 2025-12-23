@@ -1,0 +1,38 @@
+[project]
+name = "networker"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "azure-identity>=1.25.1",
+    "azure-keyvault-secrets>=4.10.0",
+    "boto3>=1.42.15",
+    "google-cloud-secret-manager>=2.26.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.39.1",
+    "opentelemetry-sdk>=1.39.1",
+    "pydantic-settings>=2.12.0",
+    "rich>=14.2.0",
+    "sqlmodel>=0.0.27",
+    "structlog>=25.5.0",
+    "tqdm>=4.67.1",
+    "typer>=0.20.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = [ "src/tests" ]
+pythonpath = [ "." ]
+
+[tool.ruff]
+lint.select = ["I"]
+
+[project.scripts]
+networker = "src.cli.main:main"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.5.1",
+    "pytest>=9.0.2",
+    "pytest-xdist>=3.8.0",
+    "ruff>=0.14.10",
+]
