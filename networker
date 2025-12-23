@@ -1,3 +1,13 @@
 #!/usr/bin/env bash
 # Run the networker CLI without installing the package
-sudo uv run -- python -m src.cli.main "$@"
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" || "$OSTYPE" == "cygwin" ]]; then
+    uv run -- python -m src.cli.main "$@"
+else
+    if [ "$EUID" -eq 0 ]; then
+        uv run -- python -m src.cli.main "$@"
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo uv run -- python -m src.cli.main "$@"
+    else
+        uv run -- python -m src.cli.main "$@"
+    fi
+fi
