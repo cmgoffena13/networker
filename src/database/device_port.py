@@ -16,7 +16,6 @@ def db_save_device_ports(device_ports: List[DevicePort], device_id: int):
         savepoint = session.begin_nested()
         try:
             session.exec(delete(DevicePort).where(DevicePort.device_id == device_id))
-
             session.add_all(device_ports)
 
             savepoint.commit()
