@@ -1,13 +1,13 @@
 from typer import Typer
 
-device = Typer(help="Device commands")
+device_typer = Typer(help="Device commands")
 
 
-@device.command("scan", help="Scan the device for open ports")
+@device_typer.command("scan", help="Scan the device for open ports")
 def scan():
     pass
 
 
-@device.command("list", help="list information on devices stored")
+@device_typer.command("list", help="list information on devices stored")
 def list():
     pass

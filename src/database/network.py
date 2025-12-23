@@ -1,6 +1,6 @@
 import structlog
-from sqlalchemy import select
-from sqlmodel import Session
+from pendulum import now
+from sqlmodel import Session, select
 
 from src.database.db import engine
 from src.models.network import Network
@@ -23,6 +23,7 @@ def db_save_network(network: Network) -> Network:
             existing.broadcast_address = network.broadcast_address
             existing.netmask = network.netmask
             existing.ips_available = network.ips_available
+            existing.updated_at = now()
             session.add(existing)
             try:
                 session.commit()

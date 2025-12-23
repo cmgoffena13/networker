@@ -29,7 +29,6 @@ class Network(SQLModel, table=True):
         sa_column=Column(
             DateTimeTZ(timezone=False),
             nullable=True,
-            onupdate=text("CURRENT_TIMESTAMP"),
         )
     )
 

@@ -4,14 +4,14 @@ from rich.logging import RichHandler
 from typer import Typer
 
 from src.cli.console import console
-from src.cli.device import device
-from src.cli.network import network
+from src.cli.device import device_typer
+from src.cli.network import network_typer
 from src.database.db import init_db
 from src.logging_conf import setup_logging
 
 app = Typer(help="Networker CLI - Interact with your local network")
-app.add_typer(network, name="network")
-app.add_typer(device, name="device")
+app.add_typer(network_typer, name="network")
+app.add_typer(device_typer, name="device")
 
 
 @app.command("init", help="Initialize the sqlite database and seed port lookups")

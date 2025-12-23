@@ -142,6 +142,6 @@ def get_network(save: bool = False) -> Optional[Network]:
     )
     if save:
         logger.debug("Saving network...")
-        db_save_network(network)
+        network = db_save_network(network)
         logger.debug("Network saved")
     return network

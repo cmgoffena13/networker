@@ -1,4 +1,5 @@
 import structlog
+from pendulum import now
 from sqlalchemy import select
 from sqlmodel import Session
 
@@ -20,6 +21,7 @@ def db_save_device(device: Device) -> Device:
         if existing:
             existing.device_ip = device.device_ip
             existing.is_router = device.is_router
+            existing.updated_at = now()
             session.add(existing)
             try:
                 session.commit()

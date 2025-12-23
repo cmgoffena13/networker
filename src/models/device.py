@@ -15,6 +15,7 @@ class Device(SQLModel, table=True):
     device_mac: str = Field(max_length=12)
     device_ip: str = Field(max_length=16)
     is_router: bool = Field(default=False)
+    device_name: Optional[str] = Field(max_length=255)
     created_at: DateTime = Field(
         sa_column=Column(
             DateTimeTZ(timezone=False),
@@ -26,7 +27,6 @@ class Device(SQLModel, table=True):
         sa_column=Column(
             DateTimeTZ(timezone=False),
             nullable=True,
-            onupdate=text("CURRENT_TIMESTAMP"),
         )
     )
 

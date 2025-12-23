@@ -9,12 +9,12 @@ from src.protocol import Protocol
 
 logger = structlog.getLogger(__name__)
 
-engine = create_engine("sqlite:///database.db")
+engine = create_engine("sqlite:///networker.db")
 
 
 def db_seed_ports():
     logger.debug("Inserting ports...")
-    script_dir = Path(__file__).parent
+    script_dir = Path(__file__).parent.parent
     ports_file = script_dir / "seeds" / "output" / "ports.csv"
 
     if not ports_file.exists():

@@ -3,21 +3,21 @@ from typer import Option, Typer
 from src.core.device import get_devices_on_network
 from src.core.network import get_network
 
-network = Typer(help="Network commands")
+network_typer = Typer(help="Network commands")
 
 
-@network.command("update", help="Update the network and devices information")
+@network_typer.command("init", help="initialize the network and devices information")
 def init():
-    get_network(save=True)
+    network = get_network(save=True)
     get_devices_on_network(network, save=True)
 
 
-@network.command("scan", help="Scan the network for open ports on devices")
+@network_typer.command("scan", help="Scan the network for open ports on devices")
 def scan(log: bool = Option(False, "--log", "-l", help="Log the network scan results")):
     network = get_network(save=log)
     get_devices_on_network(network, save=log)
 
 
-@network.command("list", help="list information on networks stored")
+@network_typer.command("list", help="list information on networks stored")
 def list():
     pass

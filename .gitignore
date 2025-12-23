@@ -7,7 +7,7 @@ __pycache__/
 *.json
 
 # SQLite Database
-database.db
+networker.db
 
 # C extensions
 *.so
