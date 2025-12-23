@@ -1,4 +1,5 @@
 import ipaddress
+import time
 from typing import List, Optional
 
 import httpx
@@ -11,6 +12,44 @@ from src.models.device import Device
 from src.models.network import Network
 
 logger = structlog.getLogger(__name__)
+
+
+def get_vendor_name(mac_address: str, api_key: Optional[str] = None) -> Optional[str]:
+    oui = mac_address[:8]
+    logger.debug(f"Getting vendor name for OUI: {oui}")
+    try:
+        url = f"https://api.maclookup.app/v2/macs/{oui}/company/name"
+        params = {}
+        if api_key:
+            params["apiKey"] = api_key
+
+        response = httpx.get(url, params=params, timeout=10)
+
+        if response.status_code == 200:
+            vendor_name = response.text.strip()
+            logger.debug(f"Vendor name for {mac_address}: {vendor_name}")
+            time.sleep(0.6)  # Rate limit is 2 requests per second
+            return vendor_name if vendor_name else None
+        elif response.status_code == 400:
+            logger.warning(f"Invalid MAC address format: {mac_address}")
+            return None
+        elif response.status_code == 401:
+            logger.warning("Invalid API key for maclookup.app")
+            return None
+        elif response.status_code == 409:
+            logger.warning("Rate limit exceeded for maclookup.app")
+            return None
+        elif response.status_code == 429:
+            logger.warning("Rate limit exceeded for maclookup.app")
+            return None
+        else:
+            logger.warning(
+                f"Unexpected response from maclookup.app: {response.status_code}"
+            )
+            return None
+    except Exception as e:
+        logger.error(f"Error getting vendor name for {mac_address}: {e}")
+        return None
 
 
 def get_router_mac() -> Optional[str]:
@@ -57,12 +96,14 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
             is_router = True
         else:
             is_router = False
+
+        vendor_name = get_vendor_name(mac)
         device = Device(
             network_id=network.id,
             device_mac=mac,
             device_ip=ip,
             is_router=is_router,
-            vendor_name=None,
+            vendor_name=vendor_name,
         )
         devices.append(device)
     logger.debug(f"Found {len(devices)} devices on network: {network.network_address}")
