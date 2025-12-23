@@ -20,7 +20,7 @@ def init_db(restart: bool = False):
         SQLModel.metadata.drop_all(engine)
     SQLModel.metadata.create_all(engine)
     if restart:
-        from src.db_utils import db_insert_ports
+        from src.db_utils import db_seed_ports
 
-        db_insert_ports()
+        db_seed_ports()
     logger.debug("Database initialized")

@@ -15,7 +15,7 @@ from src.protocol import Protocol
 logger = structlog.getLogger(__name__)
 
 
-def db_insert_ports():
+def db_seed_ports():
     logger.debug("Inserting ports...")
     script_dir = Path(__file__).parent
     ports_file = script_dir / "seeds" / "output" / "ports.csv"
