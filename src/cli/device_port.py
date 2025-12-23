@@ -23,9 +23,8 @@ def list(
     try:
         device = db_get_device(device_id)
         device_ports = db_list_device_ports(device_id)
-        device_name = device.device_name or "Unknown"
         echo(
-            f"Listing the {len(device_ports)} open ports for device (MAC: {device.device_mac}, Name: {device_name}, ID: {device.id})..."
+            f"Listing the {len(device_ports)} open ports for device (MAC: {device.mac_address}, Name: {device.device_name}, ID: {device.id})..."
         )
         for device_port, service_name, description in device_ports:
             echo(display_port_info(device_port, service_name, description))

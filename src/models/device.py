@@ -12,11 +12,16 @@ class Device(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True, nullable=False)
     network_id: int = Field(foreign_key="networks.id")
-    device_mac: str = Field(max_length=12)
-    device_ip: str = Field(max_length=16)
+    mac_address: str = Field(max_length=12)
+    ip_address: str = Field(max_length=16)
     is_router: bool = Field(default=False)
     device_name: Optional[str] = Field(max_length=255)
-    mac_vendor_name: Optional[str] = Field(max_length=255)
+    mac_vendor: Optional[str] = Field(max_length=255)
+    snmp_system_desc: Optional[str] = Field(max_length=255)
+    os_fingerprint_vendor: Optional[str] = Field(max_length=255)
+    os_fingerprint_family: Optional[str] = Field(max_length=255)
+    os_fingerprint_type: Optional[str] = Field(max_length=255)
+    os_fingerprint_accuracy: Optional[int] = Field(ge=0, le=100)
     created_at: DateTime = Field(
         sa_column=Column(
             DateTimeTZ(timezone=False),
@@ -32,5 +37,5 @@ class Device(SQLModel, table=True):
     )
 
     __table_args__ = (
-        Index("idx_network_id_device_mac", "network_id", "device_mac", unique=True),
+        Index("idx_network_id_mac_address", "network_id", "mac_address", unique=True),
     )

@@ -21,11 +21,13 @@ def db_save_network(network: Network) -> Network:
 
         if existing:
             logger.debug(f"Network already exists, updating...")
-            existing.network_address = network.network_address
-            existing.public_ip = network.public_ip
-            existing.broadcast_address = network.broadcast_address
-            existing.netmask = network.netmask
-            existing.ips_available = network.ips_available
+            network_data = network.model_dump(
+                exclude_none=True,
+                exclude={"id", "ssid_name", "router_mac", "created_at"},
+            )
+            for key, value in network_data.items():
+                if hasattr(existing, key):
+                    setattr(existing, key, value)
             existing.updated_at = now()
             session.add(existing)
             try:

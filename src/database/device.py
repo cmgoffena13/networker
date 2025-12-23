@@ -16,15 +16,19 @@ def db_save_device(device: Device) -> Device:
     with Session(engine) as session:
         statement = select(Device).where(
             Device.network_id == device.network_id,
-            Device.device_mac == device.device_mac,
+            Device.mac_address == device.mac_address,
         )
         existing = session.exec(statement).first()
 
         if existing:
             logger.debug(f"Device already exists, updating...")
-            existing.device_ip = device.device_ip
-            existing.mac_vendor_name = device.mac_vendor_name
-            existing.is_router = device.is_router
+            device_data = device.model_dump(
+                exclude_none=True,
+                exclude={"id", "network_id", "mac_address", "created_at"},
+            )
+            for key, value in device_data.items():
+                if hasattr(existing, key):
+                    setattr(existing, key, value)
             existing.updated_at = now()
             session.add(existing)
             try:
