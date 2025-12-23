@@ -1,6 +1,7 @@
 import ipaddress
 from typing import List, Optional
 
+import httpx
 import structlog
 from scapy.all import ARP, Ether, conf, srp
 
@@ -61,6 +62,7 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
             device_mac=mac,
             device_ip=ip,
             is_router=is_router,
+            vendor_name=None,
         )
         devices.append(device)
     logger.debug(f"Found {len(devices)} devices on network: {network.network_address}")

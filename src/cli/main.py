@@ -3,7 +3,7 @@ import logging
 from rich.logging import RichHandler
 from typer import Option, Typer
 
-from src.cli.console import console
+from src.cli.console import console, echo
 from src.cli.device import device_typer
 from src.cli.network import network_typer
 from src.database.db import init_db
@@ -22,7 +22,9 @@ def init(
 ):
     if verbose:
         set_log_level("DEBUG")
+    echo("Initializing database...")
     init_db(init=True)
+    echo("Database initialized and seeded with port lookups")
 
 
 def main() -> None:
