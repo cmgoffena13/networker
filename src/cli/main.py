@@ -6,7 +6,7 @@ from typer import Typer
 from src.cli.console import console
 from src.cli.device import device
 from src.cli.network import network
-from src.db import init_db
+from src.database.db import init_db
 from src.logging_conf import setup_logging
 
 app = Typer(help="Networker CLI - Interact with your local network")

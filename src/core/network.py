@@ -11,6 +11,10 @@ import structlog
 from scapy.all import conf, get_if_addr
 
 from src.cli.console import echo
+from src.core.device import get_router_mac
+from src.database.network import db_save_network
+from src.exceptions import NetworkNotFoundError
+from src.models.network import Network
 
 logger = structlog.getLogger(__name__)
 
@@ -57,7 +61,7 @@ def get_wifi_network_name() -> Optional[str]:
     return ssid
 
 
-def _get_netmask() -> Optional[str]:
+def get_netmask() -> Optional[str]:
     logger.debug("Getting netmask...")
     netmask = None
     interface_name = str(conf.iface)
@@ -91,11 +95,11 @@ def _get_netmask() -> Optional[str]:
     return netmask
 
 
-def get_network() -> Optional[ipaddress.IPv4Network]:
+def get_network_info() -> Optional[ipaddress.IPv4Network]:
     logger.debug("Getting network...")
     echo("Finding network...")
     local_ip = get_if_addr(conf.iface)
-    netmask = _get_netmask()
+    netmask = get_netmask()
     if netmask:
         netmask_int = int(ipaddress.IPv4Address(netmask))
         prefix_length = bin(netmask_int).count("1")
@@ -113,7 +117,31 @@ def get_public_ip() -> Optional[str]:
     try:
         response = httpx.get("https://api.ipify.org?format=json")
         if response.status_code == 200:
-            return response.json()["ip"]
+            ip_address = response.json()["ip"]
+            logger.debug(f"Public IP: {ip_address}")
+            return ip_address
     except Exception as e:
         logger.error(f"Error getting public IP: {e}")
         return None
+
+
+def get_network(save: bool = False) -> Optional[Network]:
+    logger.debug("Getting network info...")
+    network_info = get_network_info()
+    if not network_info:
+        logger.error("No network found")
+        raise NetworkNotFoundError("No network found")
+    network = Network(
+        ssid_name=get_wifi_network_name(),
+        router_mac=get_router_mac(),
+        network_address=str(network_info.network_address),
+        broadcast_address=str(network_info.broadcast_address),
+        netmask=get_netmask(),
+        ips_available=network_info.num_addresses - 2,
+        public_ip=get_public_ip(),
+    )
+    if save:
+        logger.debug("Saving network...")
+        db_save_network(network)
+        logger.debug("Network saved")
+    return network

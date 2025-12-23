@@ -5,6 +5,7 @@ import structlog
 from scapy.all import ARP, Ether, conf, srp
 
 from src.cli.console import echo
+from src.database.device import db_save_device
 from src.models.device import Device
 from src.models.network import Network
 
@@ -35,7 +36,7 @@ def get_router_mac() -> Optional[str]:
     return None
 
 
-def get_devices_on_network(network: Network) -> List[Device]:
+def get_devices_on_network(network: Network, save: bool = False) -> List[Device]:
     logger.debug(f"Getting devices on network: {network.network_address}...")
     echo(f"Getting devices on network: {str(network.network_address)}...")
     devices = []
@@ -64,4 +65,9 @@ def get_devices_on_network(network: Network) -> List[Device]:
         devices.append(device)
     logger.debug(f"Found {len(devices)} devices on network: {network.network_address}")
     echo(f"Found {len(devices)} devices.")
+    if save:
+        logger.debug("Saving devices...")
+        for device in devices:
+            db_save_device(device)
+        logger.debug("Devices saved")
     return devices

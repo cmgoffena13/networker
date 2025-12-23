@@ -1,10 +1,17 @@
-from typer import Typer
+from typer import Option, Typer
 
-from src.cli.console import echo
+from src.core.device import get_devices_on_network
+from src.core.network import get_network
 
 network = Typer(help="Network commands")
 
 
-@network.command("scan", help="Scan the network for devices")
-def scan():
-    echo(f"Scanning network...")
+@network.command("scan", help="Scan the network for open ports on devices")
+def scan(log: bool = Option(False, "--log", "-l", help="Log the network scan results")):
+    network = get_network(save=log)
+    get_devices_on_network(network, save=log)
+
+
+@network.command("list", help="list information on networks stored")
+def list():
+    pass

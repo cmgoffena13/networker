@@ -1,0 +1,2 @@
+class NetworkNotFoundError(Exception):
+    pass
