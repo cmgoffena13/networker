@@ -1,13 +1,13 @@
 import logging
 
 from rich.logging import RichHandler
-from typer import Typer
+from typer import Option, Typer
 
 from src.cli.console import console
 from src.cli.device import device_typer
 from src.cli.network import network_typer
 from src.database.db import init_db
-from src.logging_conf import setup_logging
+from src.logging_conf import set_log_level, setup_logging
 
 app = Typer(help="Networker CLI - Interact with your local network")
 app.add_typer(network_typer, name="network")
@@ -15,12 +15,18 @@ app.add_typer(device_typer, name="device")
 
 
 @app.command("init", help="Initialize the sqlite database and seed port lookups")
-def init():
+def init(
+    verbose: bool = Option(
+        False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
+    ),
+):
+    if verbose:
+        set_log_level("DEBUG")
     init_db(init=True)
 
 
 def main() -> None:
-    setup_logging()
+    setup_logging(log_level="WARNING")
     root_logger = logging.getLogger("src")
     for handler in root_logger.handlers:
         if isinstance(handler, RichHandler):

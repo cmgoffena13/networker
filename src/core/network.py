@@ -143,5 +143,6 @@ def get_network(save: bool = False) -> Optional[Network]:
     if save:
         logger.debug("Saving network...")
         network = db_save_network(network)
+        echo("Network info logged to database")
         logger.debug("Network saved")
     return network

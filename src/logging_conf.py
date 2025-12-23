@@ -1,3 +1,4 @@
+import logging
 import warnings
 from logging.config import dictConfig
 
@@ -14,7 +15,10 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from src.settings import config
 
 
-def setup_logging():
+def setup_logging(log_level: str = None):
+    if log_level is None:
+        log_level = config.LOG_LEVEL
+
     warnings.filterwarnings(
         "ignore",
         message=".*Pydantic serializer warnings.*",
@@ -66,13 +70,13 @@ def setup_logging():
         handlers = {
             "default": {
                 "class": "rich.logging.RichHandler",
-                "level": config.LOG_LEVEL,
+                "level": log_level,
                 "formatter": "console",
                 "show_path": False,
             },
             "otel": {
                 "()": LoggingHandler,
-                "level": config.LOG_LEVEL,
+                "level": log_level,
                 "logger_provider": logger_provider,
             },
         }
@@ -80,7 +84,7 @@ def setup_logging():
         handlers = {
             "default": {
                 "class": "rich.logging.RichHandler",
-                "level": config.LOG_LEVEL,
+                "level": log_level,
                 "formatter": "console",
                 "show_path": False,
             },
@@ -98,7 +102,7 @@ def setup_logging():
     # Any other loggers will be children of src and inherit the settings
     loggers = {
         "src": {
-            "level": config.LOG_LEVEL,
+            "level": log_level,
             "handlers": list(handlers.keys()),
             "propagate": False,
         }
@@ -113,3 +117,14 @@ def setup_logging():
             "loggers": loggers,
         }
     )
+
+
+def set_log_level(level: str):
+    """Update the logging level dynamically after setup_logging has been called."""
+
+    root_logger = logging.getLogger("src")
+    root_logger.setLevel(level)
+
+    # Update all handlers
+    for handler in root_logger.handlers:
+        handler.setLevel(level)

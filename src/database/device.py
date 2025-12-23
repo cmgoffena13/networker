@@ -1,7 +1,6 @@
 import structlog
 from pendulum import now
-from sqlalchemy import select
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from src.database.db import engine
 from src.models.device import Device
