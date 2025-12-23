@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import structlog
 from sqlmodel import Session, delete, select
@@ -27,11 +27,13 @@ def db_save_device_ports(device_ports: List[DevicePort], device_id: int):
             raise
 
 
-def db_list_device_ports(device_id: int) -> List[Tuple[DevicePort, str | None]]:
+def db_list_device_ports(
+    device_id: int,
+) -> List[Tuple[DevicePort, Optional[str], Optional[str]]]:
     logger.debug(f"Listing open device ports for device: {device_id}")
     with Session(engine) as session:
         return session.exec(
-            select(DevicePort, Port.service_name)
+            select(DevicePort, Port.service_name, Port.description)
             .outerjoin(
                 Port,
                 (DevicePort.port_number == Port.port_number)

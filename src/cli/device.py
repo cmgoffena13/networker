@@ -3,7 +3,7 @@ import json
 import structlog
 from typer import Exit, Option, Typer
 
-from src.cli.console import console, echo
+from src.cli.console import console, display_port_info, echo
 from src.core.device import get_open_ports
 from src.database.device import db_get_device, db_list_devices, db_update_device
 from src.logging_conf import set_log_level
@@ -26,11 +26,8 @@ def scan(
     try:
         device = db_get_device(device_id)
         device_ports = get_open_ports(device, save=log)
-        for device_port, service_name in device_ports:
-            service_info = f" - {service_name}" if service_name else ""
-            echo(
-                f"Open Port: {device_port.port_number} ({device_port.protocol.value}){service_info}"
-            )
+        for device_port, service_name, description in device_ports:
+            echo(display_port_info(device_port, service_name, description))
     except Exception as e:
         logger.error(f"Error scanning device: {e}")
         raise Exit(code=1)

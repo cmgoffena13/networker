@@ -1,7 +1,8 @@
 import structlog
 from typer import Exit, Option, Typer
 
-from src.cli.console import echo
+from src.cli.console import display_port_info, echo
+from src.database.device import db_get_device
 from src.database.device_port import db_list_device_ports
 from src.logging_conf import set_log_level
 
@@ -20,13 +21,14 @@ def list(
     if verbose:
         set_log_level("DEBUG")
     try:
+        device = db_get_device(device_id)
         device_ports = db_list_device_ports(device_id)
-        echo(f"Listing {len(device_ports)} open ports for device: {device_id}")
-        for device_port, service_name in device_ports:
-            service_info = f" - {service_name}" if service_name else ""
-            echo(
-                f"Open Port: {device_port.port_number} ({device_port.protocol.value}){service_info}"
-            )
+        device_name = device.device_name or "Unknown"
+        echo(
+            f"Listing the {len(device_ports)} open ports for device (MAC: {device.device_mac}, Name: {device_name})..."
+        )
+        for device_port, service_name, description in device_ports:
+            echo(display_port_info(device_port, service_name, description))
     except Exception as e:
         logger.error(f"Error listing ports: {e}")
         raise Exit(code=1)

@@ -1,7 +1,7 @@
 import structlog
 from typer import Exit, Option, Typer
 
-from src.cli.console import echo
+from src.cli.console import display_port_info, echo
 from src.core.device import get_devices_on_network, get_open_ports
 from src.core.network import get_network
 from src.database.network import db_list_networks
@@ -41,11 +41,8 @@ def scan(
         devices = get_devices_on_network(network, save=log)
         for device in devices:
             device_ports = get_open_ports(device, save=log)
-            for device_port, service_name in device_ports:
-                service_info = f" - {service_name}" if service_name else ""
-                echo(
-                    f"Open Port: {device_port.port_number} ({device_port.protocol.value}){service_info}"
-                )
+            for device_port, service_name, description in device_ports:
+                echo(display_port_info(device_port, service_name, description))
     except Exception as e:
         logger.error(f"Error scanning network: {e}")
         raise Exit(code=1)

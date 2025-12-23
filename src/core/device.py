@@ -108,7 +108,7 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
 
 def get_open_ports(
     device: Device, save: bool = False
-) -> List[Tuple[DevicePort, str | None]]:
+) -> List[Tuple[DevicePort, Optional[str], Optional[str]]]:
     device_ports = []
     ports = list(range(1, 65536))
     total_batches = (
@@ -168,7 +168,7 @@ def get_open_ports(
             echo("Open ports saved to database.")
             result = db_list_device_ports(device.id)
         else:
-            result = [(dp, None) for dp in device_ports]
+            result = [(dp, None, None) for dp in device_ports]
     except KeyboardInterrupt:
         raise Abort()
     except Exception as e:
