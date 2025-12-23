@@ -112,6 +112,6 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
         logger.debug("Saving devices...")
         for device in devices:
             db_save_device(device)
-        echo("Devices info logged to database")
+        echo("Devices info logged to database.")
         logger.debug("Devices saved")
     return devices
