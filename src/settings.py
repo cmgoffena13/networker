@@ -72,7 +72,7 @@ class GlobalConfig(BaseConfig):
 
 
 class DevConfig(GlobalConfig):
-    LOG_LEVEL: LogLevel = "DEBUG"  # Overrides the global LOG_LEVEL
+    LOG_LEVEL: LogLevel = "DEBUG"
     OTEL_PYTHON_LOG_CORRELATION: bool = False
 
     model_config = SettingsConfigDict(env_prefix="DEV_")

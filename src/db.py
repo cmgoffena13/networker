@@ -8,18 +8,13 @@ logger = structlog.getLogger(__name__)
 engine = create_engine("sqlite:///database.db")
 
 
-def get_session():
-    with Session(engine) as session:
-        yield session
-
-
-def init_db(restart: bool = False):
+def init_db(init: bool = False):
     logger.debug("Initializing database...")
-    if restart:
+    if init:
         logger.debug("Dropping all tables...")
         SQLModel.metadata.drop_all(engine)
     SQLModel.metadata.create_all(engine)
-    if restart:
+    if init:
         from src.db_utils import db_seed_ports
 
         db_seed_ports()

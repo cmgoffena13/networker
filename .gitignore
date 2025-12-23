@@ -6,6 +6,9 @@ __pycache__/
 # JSON (JSON has no place here) - GCP Credentials, etc.
 *.json
 
+# SQLite Database
+database.db
+
 # C extensions
 *.so
 
