@@ -48,6 +48,4 @@ def db_save_network(network: Network) -> Network:
 
 def db_list_networks() -> List[Network]:
     with Session(engine) as session:
-        statement = select(Network)
-        networks = session.exec(statement).all()
-        return networks
+        return session.exec(select(Network)).all()
