@@ -11,7 +11,7 @@ logger = structlog.getLogger(__name__)
 network_typer = Typer(help="Network commands")
 
 
-@network_typer.command("init", help="initialize the network and devices information")
+@network_typer.command("init", help="Initialize the network and devices information")
 def init(
     verbose: bool = Option(
         False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
@@ -48,7 +48,7 @@ def scan(
         raise Exit(code=1)
 
 
-@network_typer.command("list", help="list information on networks stored")
+@network_typer.command("list", help="List information on networks stored")
 def list(
     verbose: bool = Option(
         False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"

@@ -167,6 +167,7 @@ def get_open_ports(
                             f"Found open UDP port: {port} on device: {device.device_mac}"
                         )
                 pbar.update(1)
+        echo(f"Found {len(device_ports)} open ports on device.")
         if save:
             db_save_device_ports(device_ports, device.id)
             echo("Open ports saved to database.")
@@ -178,5 +179,4 @@ def get_open_ports(
     except Exception as e:
         logger.error(f"Error getting open ports for device: {device.device_mac}: {e}")
         raise Exit(code=1)
-    echo(f"Found {len(result)} open ports on device.")
     return result

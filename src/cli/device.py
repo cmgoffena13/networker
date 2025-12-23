@@ -33,7 +33,7 @@ def scan(
         raise Exit(code=1)
 
 
-@device_typer.command("list", help="list information on devices stored")
+@device_typer.command("list", help="List information on devices stored")
 def list(
     verbose: bool = Option(
         False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
@@ -51,7 +51,7 @@ def list(
         raise Exit(code=1)
 
 
-@device_typer.command("update", help="update the device information")
+@device_typer.command("update", help="Update the device information")
 def update(
     device_id: int = Option(..., "--id", "-i", help="Device ID to update"),
     data: str = Option(
