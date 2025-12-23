@@ -139,6 +139,7 @@ def get_network(save: bool = False) -> Optional[Network]:
         public_ip=get_public_ip(),
     )
     if save:
-        network = db_save_network(network)
+        saved_network = db_save_network(network)
+        network = saved_network
         echo("Network info logged to database.")
     return network

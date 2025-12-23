@@ -99,9 +99,12 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
         devices.append(device)
     echo(f"Found {len(devices)} devices on network: {network.network_address}")
     if save:
+        saved_devices = []
         logger.debug("Saving devices...")
         for device in devices:
-            db_save_device(device)
+            saved_device = db_save_device(device)
+            saved_devices.append(saved_device)
+        devices = saved_devices
         echo("Devices info logged to database.")
     return devices
 
@@ -117,11 +120,12 @@ def get_open_ports(
     try:
         device_name = device.device_name or "Unknown"
         echo(
-            f"Scanning device (MAC: {device.device_mac}, Name: {device_name}) for open ports..."
+            f"Scanning device (MAC: {device.device_mac}, Name: {device_name}, ID: {device.id}) for open ports..."
         )
         with tqdm(
             total=total_batches,
             colour="green",
+            bar_format="{percentage:3.0f}%|{bar}| ETA [{remaining}]",
         ) as pbar:
             for index in range(0, len(ports), config.PORT_SCAN_BATCH_SIZE):
                 batch = ports[index : index + config.PORT_SCAN_BATCH_SIZE]
@@ -174,5 +178,5 @@ def get_open_ports(
     except Exception as e:
         logger.error(f"Error getting open ports for device: {device.device_mac}: {e}")
         raise Exit(code=1)
-    echo(f"Found {len(result)} open ports on device: {device.device_mac}")
+    echo(f"Found {len(result)} open ports on device.")
     return result
