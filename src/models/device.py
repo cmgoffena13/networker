@@ -16,12 +16,6 @@ class Device(SQLModel, table=True):
     ip_address: str = Field(max_length=16)
     is_router: bool = Field(default=False)
     device_name: Optional[str] = Field(max_length=255)
-    mac_vendor: Optional[str] = Field(max_length=255)
-    snmp_system_desc: Optional[str] = Field(max_length=255)
-    os_fingerprint_vendor: Optional[str] = Field(max_length=255)
-    os_fingerprint_family: Optional[str] = Field(max_length=255)
-    os_fingerprint_type: Optional[str] = Field(max_length=255)
-    os_fingerprint_accuracy: Optional[int] = Field(ge=0, le=100)
     created_at: DateTime = Field(
         sa_column=Column(
             DateTimeTZ(timezone=False),

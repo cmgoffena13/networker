@@ -1,20 +1,7 @@
-import asyncio
 import ipaddress
-import shutil
 from typing import List, Optional, Tuple
 
-import httpx
 import structlog
-
-try:
-    import nmap
-
-    NMAP_AVAILABLE = True
-except ImportError:
-    NMAP_AVAILABLE = False
-    nmap = None
-from pysnmp.hlapi.v1arch import Slim
-from pysnmp.smi.rfc1902 import ObjectIdentity, ObjectType
 from scapy.all import ARP, IP, TCP, UDP, Ether, conf, sr, srp
 from tqdm import tqdm
 from typer import Abort, Exit
@@ -29,137 +16,6 @@ from src.protocol import Protocol
 from src.settings import config
 
 logger = structlog.getLogger(__name__)
-
-
-def get_mac_vendor_name(
-    mac_address: str,
-) -> Optional[str]:
-    oui = mac_address[:8]
-    logger.debug(f"Getting vendor name for OUI: {oui}")
-    try:
-        url = f"https://api.maclookup.app/v2/macs/{oui}/company/name"
-        response = httpx.get(url, timeout=10)
-
-        if response.status_code == 200:
-            vendor_name = response.text.strip()
-            logger.debug(f"Vendor name for {mac_address}: {vendor_name}")
-            # time.sleep(0.6)  # Rate limit is 2 requests per second
-            return vendor_name if vendor_name else None
-        else:
-            logger.warning(
-                f"Unexpected response from maclookup.app: {response.status_code}"
-            )
-            return None
-    except Exception as e:
-        logger.error(f"Error getting vendor name for {mac_address}: {e}")
-        return None
-
-
-def get_os_fingerprint(
-    ip_address: str,
-) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[int]]:
-    logger.debug(f"Getting OS fingerprint for {ip_address}")
-
-    if not NMAP_AVAILABLE:
-        logger.debug(f"nmap not available, skipping OS fingerprint for {ip_address}")
-        return (None, None, None, None)
-
-    if not shutil.which("nmap"):
-        logger.debug(f"nmap binary not found, skipping OS fingerprint for {ip_address}")
-        return (None, None, None, None)
-
-    try:
-        nm = nmap.PortScanner()
-        nm.scan(
-            ip_address,
-            sudo=True,
-            arguments="-O --top-ports 100 -T4 -n --disable-arp-ping",
-        )
-
-        if ip_address in nm.all_hosts():
-            host = nm[ip_address]
-            vendor = None
-            osfamily = None
-            type_val = None
-            accuracy = None
-            if "osclass" in host and host["osclass"]:
-                osclass = host["osclass"][0]
-                vendor = osclass.get("vendor")
-                osfamily = osclass.get("osfamily")
-                type_val = osclass.get("type")
-                accuracy_str = osclass.get("accuracy")
-                if accuracy_str:
-                    accuracy = int(accuracy_str)
-
-            if vendor or osfamily:
-                logger.debug(
-                    f"OS fingerprint for {ip_address}: vendor={vendor}, family={osfamily}, type={type_val}, accuracy={accuracy}"
-                )
-                return (vendor, osfamily, type_val, accuracy)
-
-        logger.debug(f"No OS fingerprint found for {ip_address}")
-        return (None, None, None, None)
-    except Exception as e:
-        logger.warning(f"Error getting OS fingerprint for {ip_address}: {e}")
-        return (None, None, None, None)
-
-
-def get_snmp_info(ip_address: str) -> Optional[str]:
-    logger.debug(f"Getting SNMP info for {ip_address}")
-
-    async def _fetch_snmp_data():
-        system_desc = None
-
-        async def _try_community(community: str) -> Optional[str]:
-            with Slim() as slim:
-                try:
-                    errorIndication, errorStatus, _, varBinds = await slim.get(
-                        community,
-                        ip_address,
-                        161,
-                        ObjectType(ObjectIdentity("1.3.6.1.2.1.1.1.0")),
-                        timeout=2,
-                    )
-                    if (
-                        not errorIndication
-                        and not errorStatus
-                        and varBinds
-                        and len(varBinds) >= 1
-                    ):
-                        if varBinds[0][1]:
-                            return str(varBinds[0][1])
-                except Exception as e:
-                    logger.debug(
-                        f"SNMP error for {ip_address} with community {community}: {e}"
-                    )
-            return None
-
-        results = await asyncio.gather(
-            _try_community("public"),
-            _try_community("private"),
-            return_exceptions=True,
-        )
-
-        for result in results:
-            if isinstance(result, str):
-                system_desc = result
-                break
-
-        if not system_desc:
-            logger.debug(f"No SNMP data found for {ip_address}")
-
-        return system_desc
-
-    try:
-        system_desc = asyncio.run(_fetch_snmp_data())
-
-        if system_desc:
-            logger.debug(f"SNMP info for {ip_address}: desc={system_desc[:50]}")
-
-        return system_desc
-    except Exception as e:
-        logger.warning(f"Error getting SNMP info for {ip_address}: {e}")
-        return None
 
 
 def get_router_mac() -> Optional[str]:
@@ -199,42 +55,23 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
     arp_request_broadcast = broadcast / arp_request
     answered, unanswered = srp(arp_request_broadcast, timeout=2, verbose=False)
 
-    discovered = list(answered)
-    total_devices = len(discovered)
+    for sent, received in answered:
+        ip = received.psrc
+        mac = received.hwsrc
+        if mac == network.router_mac:
+            is_router = True
+        else:
+            is_router = False
 
-    echo(f"Found {total_devices} devices on network: {network.network_address}")
-    echo("Gathering device information...")
-    if total_devices > 0:
-        with tqdm(
-            total=total_devices,
-            colour="green",
-            bar_format="{percentage:3.0f}%|{bar}| [{remaining}]\t\t",
-        ) as pbar:
-            for sent, received in discovered:
-                ip = received.psrc
-                mac = received.hwsrc
-                if mac == network.router_mac:
-                    is_router = True
-                else:
-                    is_router = False
+        device = Device(
+            network_id=network.id,
+            mac_address=mac,
+            ip_address=ip,
+            is_router=is_router,
+        )
+        devices.append(device)
 
-                vendor_name = get_mac_vendor_name(mac)
-                system_desc = get_snmp_info(ip)
-                os_vendor, os_family, os_type, os_accuracy = get_os_fingerprint(ip)
-                device = Device(
-                    network_id=network.id,
-                    mac_address=mac,
-                    ip_address=ip,
-                    is_router=is_router,
-                    mac_vendor=vendor_name,
-                    snmp_system_desc=system_desc,
-                    os_fingerprint_vendor=os_vendor,
-                    os_fingerprint_family=os_family,
-                    os_fingerprint_type=os_type,
-                    os_fingerprint_accuracy=os_accuracy,
-                )
-                devices.append(device)
-                pbar.update(1)
+    echo(f"Found {len(devices)} devices on network: {network.network_address}")
 
     if save:
         saved_devices = []
