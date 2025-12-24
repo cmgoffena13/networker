@@ -96,8 +96,6 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
     echo(f"Gathering device information...")
 
     current_ip = get_current_device_ip()
-    echo(f"Current device IP: {current_ip}")
-
     seen_ips = set()
 
     for sent, received in answered:
