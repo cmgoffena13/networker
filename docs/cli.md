@@ -82,7 +82,7 @@ $ networker network scan [OPTIONS]
 
 **Options**:
 
-* `-s, --save`: Save the network scan results
+* `-s, --save`: Save the network scan results to the database
 * `-v, --verbose`: Enable verbose (DEBUG) logging
 * `--help`: Show this message and exit.
 
@@ -133,7 +133,7 @@ $ networker device scan [OPTIONS]
 
 **Options**:
 
-* `-s, --save`: Save the device scan results
+* `-s, --save`: Save the device scan results to the database
 * `-v, --verbose`: Enable verbose (DEBUG) logging
 * `-i, --id INTEGER`: Device ID to scan for open ports  [required]
 * `--help`: Show this message and exit.

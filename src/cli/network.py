@@ -30,7 +30,9 @@ def init(
 
 @network_typer.command("scan", help="Scan the network for open ports on devices")
 def scan(
-    save: bool = Option(False, "--save", "-s", help="Save the network scan results"),
+    save: bool = Option(
+        False, "--save", "-s", help="Save the network scan results to the database"
+    ),
     verbose: bool = Option(
         False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
     ),

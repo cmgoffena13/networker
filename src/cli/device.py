@@ -22,7 +22,9 @@ device_typer = Typer(help="Device commands")
 
 @device_typer.command("scan", help="Scan the device for open ports")
 def scan(
-    save: bool = Option(False, "--save", "-s", help="Save the device scan results"),
+    save: bool = Option(
+        False, "--save", "-s", help="Save the device scan results to the database"
+    ),
     verbose: bool = Option(
         False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
     ),
