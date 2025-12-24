@@ -7,7 +7,7 @@ A simple CLI to monitor a local area network (LAN).
 > **Note:** Scapy requires admin privileges for ARP requests so `sudo` is utilized in the bash script.
 
 ## Initial Commands
- - Utilize the `./networker init` command to seed the sqlite database with port reference data.
+ - Utilize the `./networker init` command to seed the sqlite database with reference data.
  - Utilize the `./networker network init` command to scan and log network and device information.  
 
 
