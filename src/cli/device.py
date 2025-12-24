@@ -38,7 +38,7 @@ def scan(
             device_port_objects, device.id, save=save
         )
         echo(
-            f"Device {device.id} Inference: {device_inference}, Match: {device_inference_match:.2%}"
+            f"Device {device.id} Inference: {device_inference}, Match: {device_inference_match}"
         )
         for device_port, service_name, description in device_ports:
             echo(display_port_info(device_port, service_name, description))
