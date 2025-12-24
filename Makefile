@@ -1,3 +1,5 @@
+.PHONY: format lint test install setup upgrade seed docs
+
 format: lint
 	uv run -- ruff format
 
@@ -19,3 +21,6 @@ upgrade:
 
 seed:
 	uv run -- python -m src.seeds.main
+
+docs:
+	PYTHONPATH=. uv run -- typer src.cli.main utils docs --name networker --output docs/cli.md

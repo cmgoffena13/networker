@@ -2,13 +2,8 @@
 
 A simple CLI to monitor a local area network (LAN).  
 
- Navigate to the repo directory and utilize the `networker` bash script for easy access. Try `./networker --help` to get started!
+ Navigate to the repo directory and utilize the `networker` bash script for easy access. Try `./networker --help` to get started!  
 
-> **Note:** Scapy requires admin privileges for ARP requests so `sudo` is utilized in the bash script.
+ See [CLI Documentation](docs/cli.md) for detailed command usage.
 
-## Initial Commands
- - Utilize the `./networker init` command to seed the sqlite database with reference data.
- - Utilize the `./networker network init` command to scan and save network and device information.  
-
-
-
+> **Note:** Scapy requires admin privileges for ARP requests so `sudo` is utilized.
