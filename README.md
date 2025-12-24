@@ -8,7 +8,7 @@ A simple CLI to monitor a local area network (LAN).
 
 ## Initial Commands
  - Utilize the `./networker init` command to seed the sqlite database with reference data.
- - Utilize the `./networker network init` command to scan and log network and device information.  
+ - Utilize the `./networker network init` command to scan and save network and device information.  
 
 
 
