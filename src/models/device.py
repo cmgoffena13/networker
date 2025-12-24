@@ -13,9 +13,11 @@ class Device(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True, nullable=False)
     network_id: int = Field(foreign_key="networks.id")
     mac_address: str = Field(max_length=12)
+    mac_vendor: Optional[str] = Field(max_length=255)
     ip_address: str = Field(max_length=16)
     is_router: bool = Field(default=False)
     device_name: Optional[str] = Field(max_length=255)
+    device_inference: Optional[str] = Field(max_length=255)
     created_at: DateTime = Field(
         sa_column=Column(
             DateTimeTZ(timezone=False),

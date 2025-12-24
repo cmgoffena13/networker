@@ -35,7 +35,8 @@ def display_port_info(
 
 
 def format_device_with_ports_json(
-    device: Device, device_ports: List[Tuple[DevicePort, Optional[str], Optional[str]]]
+    device: Device,
+    device_ports: List[Tuple[DevicePort, Optional[str], Optional[str]]],
 ) -> str:
     device_dict = device.model_dump()
     ports_list = [

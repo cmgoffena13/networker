@@ -5,6 +5,7 @@ import structlog
 from sqlmodel import Session, SQLModel, create_engine
 
 from src.models import *
+from src.models.device_inference import DeviceInference
 from src.protocol import Protocol
 
 logger = structlog.getLogger(__name__)
@@ -42,6 +43,81 @@ def db_seed_ports():
             raise
 
 
+def db_seed_device_inferences():
+    logger.debug("Inserting device inferences...")
+
+    inferences = [
+        DeviceInference(
+            port_number=53,
+            protocol=Protocol.TCP,
+            inference="Router",
+            inference_reasoning="Port 53 is used for DNS Servers",
+        ),
+        DeviceInference(
+            port_number=161,
+            protocol=Protocol.UDP,
+            inference="Router",
+            inference_reasoning="Port 161 is used for SNMP",
+        ),
+        DeviceInference(
+            port_number=5000,
+            protocol=Protocol.TCP,
+            inference="macOS",
+            inference_reasoning="Port 5000 is used for desktop Airplay",
+        ),
+        DeviceInference(
+            port_number=548,
+            protocol=Protocol.TCP,
+            inference="macOS",
+            inference_reasoning="Port 548 is used for Apple Filing Protocol (AFP)",
+        ),
+        DeviceInference(
+            port_number=7000,
+            protocol=Protocol.TCP,
+            inference="iPhone/iPad",
+            inference_reasoning="Port 7000 is used for mobile device Airplay",
+        ),
+        DeviceInference(
+            port_number=62078,
+            protocol=Protocol.TCP,
+            inference="iPhone/iPad",
+            inference_reasoning="Port 62078 is used for wifi sync",
+        ),
+        DeviceInference(
+            port_number=22,
+            protocol=Protocol.TCP,
+            inference="Linux",
+            inference_reasoning="Port 22 is used for SSH",
+        ),
+        DeviceInference(
+            port_number=3389,
+            protocol=Protocol.TCP,
+            inference="Windows",
+            inference_reasoning="Port 3389 is used for Remote Desktop Protocol (RDP)",
+        ),
+        DeviceInference(
+            port_number=445,
+            protocol=Protocol.TCP,
+            inference="Windows",
+            inference_reasoning="Port 445 is used for Server Message Block (SMB)",
+        ),
+        DeviceInference(
+            port_number=9100,
+            protocol=Protocol.TCP,
+            inference="Printer",
+            inference_reasoning="Port 9100 is used for Printers",
+        ),
+    ]
+
+    with Session(engine) as session:
+        session.add_all(inferences)
+        try:
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+
+
 def init_db(init: bool = False):
     logger.debug("Initializing database...")
     if init:
@@ -50,4 +126,5 @@ def init_db(init: bool = False):
     SQLModel.metadata.create_all(engine)
     if init:
         db_seed_ports()
+        db_seed_device_inferences()
     logger.debug("Database initialized")

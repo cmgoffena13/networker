@@ -16,7 +16,7 @@ app.add_typer(device_typer, name="device")
 app.add_typer(device_port_typer, name="port")
 
 
-@app.command("init", help="Initialize the sqlite database and seed port lookups")
+@app.command("init", help="Initialize the sqlite database and seed lookup data")
 def init(
     verbose: bool = Option(
         False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
@@ -26,7 +26,7 @@ def init(
         set_log_level("DEBUG")
     echo("Initializing database...")
     init_db(init=True)
-    echo("Database initialized and seeded with port lookups")
+    echo("Database initialized and seeded lookup data")
 
 
 def main() -> None:

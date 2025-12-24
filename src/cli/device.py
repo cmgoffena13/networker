@@ -11,6 +11,7 @@ from src.cli.console import (
 )
 from src.core.device import get_open_ports
 from src.database.device import db_get_device, db_list_devices, db_update_device
+from src.database.device_inference import db_infer_device_type
 from src.database.device_port import db_list_device_ports
 from src.logging_conf import set_log_level
 
@@ -21,7 +22,7 @@ device_typer = Typer(help="Device commands")
 
 @device_typer.command("scan", help="Scan the device for open ports")
 def scan(
-    log: bool = Option(False, "--log", "-l", help="Log the device scan results"),
+    save: bool = Option(False, "--save", "-s", help="Save the device scan results"),
     verbose: bool = Option(
         False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
     ),
@@ -31,7 +32,12 @@ def scan(
         set_log_level("DEBUG")
     try:
         device = db_get_device(device_id)
-        device_ports = get_open_ports(device, save=log)
+        device_ports = get_open_ports(device, save=save)
+        device_port_objects = [dp for dp, _, _ in device_ports]
+        device_inference = db_infer_device_type(
+            device_port_objects, device_id, save=save
+        )
+        echo(f"Device Inference: {device_inference}")
         for device_port, service_name, description in device_ports:
             echo(display_port_info(device_port, service_name, description))
     except Exception as e:

@@ -1,6 +1,8 @@
 import ipaddress
+from time import sleep
 from typing import List, Optional, Tuple
 
+import httpx
 import structlog
 from scapy.all import ARP, IP, TCP, UDP, Ether, conf, sr, srp
 from tqdm import tqdm
@@ -16,6 +18,30 @@ from src.protocol import Protocol
 from src.settings import config
 
 logger = structlog.getLogger(__name__)
+
+
+def get_mac_vendor_name(
+    mac_address: str,
+) -> Optional[str]:
+    oui = mac_address[:8]
+    logger.debug(f"Getting vendor name for OUI: {oui}")
+    try:
+        url = f"https://api.maclookup.app/v2/macs/{oui}/company/name"
+        response = httpx.get(url, timeout=10)
+
+        if response.status_code == 200:
+            vendor_name = response.text.strip()
+            logger.debug(f"Vendor name for {mac_address}: {vendor_name}")
+            sleep(0.6)  # Rate limit is 2 requests per second
+            return vendor_name if vendor_name else None
+        else:
+            logger.warning(
+                f"Unexpected response from maclookup.app: {response.status_code}"
+            )
+            return None
+    except Exception as e:
+        logger.error(f"Error getting vendor name for {mac_address}: {e}")
+        return None
 
 
 def get_router_mac() -> Optional[str]:
@@ -55,6 +81,8 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
     arp_request_broadcast = broadcast / arp_request
     answered, unanswered = srp(arp_request_broadcast, timeout=2, verbose=False)
 
+    echo(f"Found {len(answered)} devices on network: {network.network_address}")
+    echo(f"Gathering device information...")
     for sent, received in answered:
         ip = received.psrc
         mac = received.hwsrc
@@ -63,23 +91,19 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
         else:
             is_router = False
 
+        vendor_name = get_mac_vendor_name(mac)
         device = Device(
             network_id=network.id,
             mac_address=mac,
+            mac_vendor=vendor_name,
             ip_address=ip,
             is_router=is_router,
         )
+        if save:
+            device = db_save_device(device)
         devices.append(device)
 
-    echo(f"Found {len(devices)} devices on network: {network.network_address}")
-
     if save:
-        saved_devices = []
-        logger.debug("Saving devices...")
-        for device in devices:
-            saved_device = db_save_device(device)
-            saved_devices.append(saved_device)
-        devices = saved_devices
         echo("Devices info logged to database.")
     return devices
 
@@ -121,9 +145,7 @@ def get_open_ports(
                             protocol=Protocol.TCP,
                         )
                         device_ports.append(device_port)
-                        logger.debug(
-                            f"Found open TCP port: {port} on device: {device.mac_address}"
-                        )
+                        logger.debug(f"Found open TCP port: {port} on device.")
                 udp_packets = [
                     IP(dst=device.ip_address) / UDP(dport=port) for port in batch
                 ]
@@ -137,9 +159,7 @@ def get_open_ports(
                             protocol=Protocol.UDP,
                         )
                         device_ports.append(device_port)
-                        logger.debug(
-                            f"Found open UDP port: {port} on device: {device.mac_address}"
-                        )
+                        logger.debug(f"Found open UDP port: {port} on device.")
                 pbar.update(1)
         echo(f"Found {len(device_ports)} open ports on device.")
         if save:
