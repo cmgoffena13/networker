@@ -1,18 +1,21 @@
-from pydantic_extra_types.pendulum_dt import DateTime
-from sqlalchemy import Column, text
-from sqlalchemy import DateTime as DateTimeTZ
-from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.schema import PrimaryKeyConstraint
-from sqlmodel import Field, SQLModel
+from typing import List, Optional
 
-from src.protocol import Protocol
+from pydantic_extra_types.pendulum_dt import DateTime
+from sqlalchemy import JSON, Column, text
+from sqlalchemy import DateTime as DateTimeTZ
+from sqlmodel import Field, SQLModel
 
 
 class DeviceInference(SQLModel, table=True):
     __tablename__ = "device_inferences"
 
-    port_number: int = Field(le=65535)
-    protocol: Protocol = Field(sa_column=Column(SQLEnum(Protocol)))
+    id: int | None = Field(default=None, primary_key=True, nullable=False)
+    tcp_port_numbers: Optional[List[int]] = Field(
+        sa_column=Column(JSON, nullable=True), le=65535
+    )
+    udp_port_numbers: Optional[List[int]] = Field(
+        sa_column=Column(JSON, nullable=True), le=65535
+    )
     inference: str = Field(max_length=255)
     inference_reasoning: str = Field(max_length=255)
     created_at: DateTime = Field(
@@ -22,5 +25,3 @@ class DeviceInference(SQLModel, table=True):
             server_default=text("CURRENT_TIMESTAMP"),
         ),
     )
-
-    __table_args__ = (PrimaryKeyConstraint("port_number", "protocol"),)

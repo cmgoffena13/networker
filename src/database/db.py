@@ -48,64 +48,61 @@ def db_seed_device_inferences():
 
     inferences = [
         DeviceInference(
-            port_number=53,
-            protocol=Protocol.TCP,
-            inference="Router",
-            inference_reasoning="Port 53 is used for DNS Servers",
-        ),
-        DeviceInference(
-            port_number=161,
-            protocol=Protocol.UDP,
-            inference="Router",
-            inference_reasoning="Port 161 is used for SNMP",
-        ),
-        DeviceInference(
-            port_number=5000,
-            protocol=Protocol.TCP,
-            inference="macOS",
-            inference_reasoning="Port 5000 is used for desktop Airplay",
-        ),
-        DeviceInference(
-            port_number=548,
-            protocol=Protocol.TCP,
-            inference="macOS",
-            inference_reasoning="Port 548 is used for Apple Filing Protocol (AFP)",
-        ),
-        DeviceInference(
-            port_number=7000,
-            protocol=Protocol.TCP,
-            inference="iPhone/iPad",
-            inference_reasoning="Port 7000 is used for mobile device Airplay",
-        ),
-        DeviceInference(
-            port_number=62078,
-            protocol=Protocol.TCP,
-            inference="iPhone/iPad",
-            inference_reasoning="Port 62078 is used for wifi sync",
-        ),
-        DeviceInference(
-            port_number=22,
-            protocol=Protocol.TCP,
-            inference="Linux",
-            inference_reasoning="Port 22 is used for SSH",
-        ),
-        DeviceInference(
-            port_number=3389,
-            protocol=Protocol.TCP,
+            tcp_port_numbers=[445, 3389],
             inference="Windows",
-            inference_reasoning="Port 3389 is used for Remote Desktop Protocol (RDP)",
+            inference_reasoning="SMB and RDP are used for Windows",
         ),
         DeviceInference(
-            port_number=445,
-            protocol=Protocol.TCP,
-            inference="Windows",
-            inference_reasoning="Port 445 is used for Server Message Block (SMB)",
+            tcp_port_numbers=[53, 80, 443, 5000, 7547],
+            inference="Router",
+            inference_reasoning="DNS + Web Server + UPnP + ISP Remote Management",
         ),
         DeviceInference(
-            port_number=9100,
-            protocol=Protocol.TCP,
+            tcp_port_numbers=[7000, 8009, 5541],
+            udp_port_numbers=[5353],
+            inference="macOS AirPlay Receiver",
+            inference_reasoning="RTSP AirPlay control + Cast discovery + AirPlay session port",
+        ),
+        DeviceInference(
+            tcp_port_numbers=[9100],
             inference="Printer",
-            inference_reasoning="Port 9100 is used for Printers",
+            inference_reasoning="Printer port",
+        ),
+        DeviceInference(
+            tcp_port_numbers=[548],
+            udp_port_numbers=[5353],
+            inference="macOS",
+            inference_reasoning="Bonjour/Zeroconf discovery + AFP file sharing",
+        ),
+        DeviceInference(
+            udp_port_numbers=[5353],
+            inference="iOS Device",
+            inference_reasoning="Persistent Bonjour/mDNS (all Apple mobile)",
+        ),
+        DeviceInference(
+            tcp_port_numbers=[22, 111, 2049],
+            inference="Linux Server",
+            inference_reasoning="SSH + NFS + Samba",
+        ),
+        DeviceInference(
+            tcp_port_numbers=[1433],
+            inference="Microsoft SQL Server",
+            inference_reasoning="MSSQL default instance port",
+        ),
+        DeviceInference(
+            tcp_port_numbers=[5432],
+            inference="PostgreSQL",
+            inference_reasoning="PostgreSQL standard query port",
+        ),
+        DeviceInference(
+            tcp_port_numbers=[6379],
+            inference="Redis",
+            inference_reasoning="Redis in-memory database port",
+        ),
+        DeviceInference(
+            tcp_port_numbers=[3306],
+            inference="MySQL/MariaDB",
+            inference_reasoning="MySQL standard query port",
         ),
     ]
 

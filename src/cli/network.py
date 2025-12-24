@@ -43,10 +43,12 @@ def scan(
         for device in devices:
             device_ports = get_open_ports(device, save=save)
             device_port_objects = [dp for dp, _, _ in device_ports]
-            device_inference = db_infer_device_type(
+            device_inference, device_inference_match = db_infer_device_type(
                 device_port_objects, device.id, save=save
             )
-            echo(f"Device Inference: {device_inference}")
+            echo(
+                f"Device {device.id} Inference: {device_inference}, Match: {device_inference_match:.2%}"
+            )
             for device_port, service_name, description in device_ports:
                 echo(display_port_info(device_port, service_name, description))
     except Exception as e:

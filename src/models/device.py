@@ -18,6 +18,7 @@ class Device(SQLModel, table=True):
     is_router: bool = Field(default=False)
     device_name: Optional[str] = Field(max_length=255)
     device_inference: Optional[str] = Field(max_length=255)
+    inference_match: Optional[float] = Field(ge=0, le=1)
     created_at: DateTime = Field(
         sa_column=Column(
             DateTimeTZ(timezone=False),
