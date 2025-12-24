@@ -48,5 +48,6 @@ def format_device_with_ports_json(
         }
         for dp, service_name, description in device_ports
     ]
+    device_dict = dict(sorted(device_dict.items()))
     device_dict["open_ports"] = ports_list
     return json.dumps(device_dict, indent=2, default=str)
