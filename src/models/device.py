@@ -19,6 +19,7 @@ class Device(SQLModel, table=True):
     device_name: Optional[str] = Field(max_length=255)
     device_inference: Optional[str] = Field(max_length=255)
     inference_match: Optional[float] = Field(ge=0, le=1)
+    current_device: bool = Field(default=False)
     created_at: DateTime = Field(
         sa_column=Column(
             DateTimeTZ(timezone=False),

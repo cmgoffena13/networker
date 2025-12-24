@@ -1,10 +1,11 @@
 import ipaddress
+import socket
 from time import sleep
 from typing import List, Optional, Tuple
 
 import httpx
 import structlog
-from scapy.all import ARP, IP, TCP, UDP, Ether, conf, sr, srp
+from scapy.all import ARP, IP, TCP, UDP, Ether, conf, get_if_hwaddr, sr, srp
 from tqdm import tqdm
 from typer import Abort, Exit
 
@@ -68,6 +69,16 @@ def get_router_mac() -> Optional[str]:
     return None
 
 
+def get_current_device_ip() -> Optional[str]:
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            return ip
+    except Exception:
+        return None
+
+
 def get_devices_on_network(network: Network, save: bool = False) -> List[Device]:
     echo(f"Getting devices on network: {str(network.network_address)}...")
     devices = []
@@ -83,13 +94,23 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
 
     echo(f"Found {len(answered)} devices on network: {network.network_address}")
     echo(f"Gathering device information...")
+
+    current_ip = get_current_device_ip()
+    echo(f"Current device IP: {current_ip}")
+
+    seen_ips = set()
+
     for sent, received in answered:
         ip = received.psrc
         mac = received.hwsrc
+        seen_ips.add(ip)
+
         if mac == network.router_mac:
             is_router = True
         else:
             is_router = False
+
+        is_current_device = current_ip is not None and ip == current_ip
 
         vendor_name = get_mac_vendor_name(mac)
         device = Device(
@@ -98,10 +119,32 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
             mac_vendor=vendor_name,
             ip_address=ip,
             is_router=is_router,
+            current_device=is_current_device,
         )
         if save:
             device = db_save_device(device)
         devices.append(device)
+
+    if current_ip and current_ip not in seen_ips:
+        try:
+            current_mac = get_if_hwaddr(conf.iface)
+            logger.debug(
+                f"Adding current device manually: IP={current_ip}, MAC={current_mac}"
+            )
+            vendor_name = get_mac_vendor_name(current_mac)
+            current_device = Device(
+                network_id=network.id,
+                mac_address=current_mac,
+                mac_vendor=vendor_name,
+                ip_address=current_ip,
+                is_router=False,
+                current_device=True,
+            )
+            if save:
+                current_device = db_save_device(current_device)
+            devices.append(current_device)
+        except Exception as e:
+            logger.warning(f"Could not get MAC address for current device: {e}")
 
     if save:
         echo("Devices info logged to database.")
