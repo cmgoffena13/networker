@@ -5,7 +5,6 @@ from typer import Option, Typer
 
 from src.cli.console import console, echo
 from src.cli.device import device_typer
-from src.cli.device_port import device_port_typer
 from src.cli.network import network_typer
 from src.database.db import init_db
 from src.logging_conf import set_log_level, setup_logging
@@ -13,7 +12,6 @@ from src.logging_conf import set_log_level, setup_logging
 app = Typer(help="Networker CLI - Interact with your local network")
 app.add_typer(network_typer, name="network")
 app.add_typer(device_typer, name="device")
-app.add_typer(device_port_typer, name="port")
 
 
 @app.command("init", help="Initialize the sqlite database and seed lookup data")
