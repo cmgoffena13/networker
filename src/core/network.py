@@ -60,8 +60,6 @@ def get_wifi_network_name() -> Optional[str]:
             if match:
                 ssid = match.group(1).strip()
     logger.debug(f"WiFi network name: {ssid}")
-    if ssid == "<redacted>":
-        ssid = None
     return ssid
 
 
@@ -134,7 +132,7 @@ def get_network(save: bool = False) -> Optional[Network]:
         logger.error("No network found")
         raise NetworkNotFoundError("No network found")
     network = Network(
-        ssid_name=get_wifi_network_name(),
+        network_name=get_wifi_network_name(),
         router_mac=get_router_mac(),
         network_address=str(network_info.network_address),
         broadcast_address=str(network_info.broadcast_address),

@@ -2,6 +2,7 @@ from pathlib import Path
 
 import polars as pl
 import structlog
+from sqlalchemy import text
 from sqlmodel import Session, SQLModel, create_engine
 
 from src.models import *
@@ -51,6 +52,11 @@ def db_seed_device_inferences():
             tcp_port_numbers=[445, 3389],
             inference="Windows",
             inference_reasoning="SMB and RDP are used for Windows",
+        ),
+        DeviceInference(
+            tcp_port_numbers=[53, 80, 443],
+            inference="Switch",
+            inference_reasoning="DNS + Web Server",
         ),
         DeviceInference(
             tcp_port_numbers=[53, 80, 443, 5000, 7547],
@@ -107,6 +113,7 @@ def db_seed_device_inferences():
     ]
 
     with Session(engine) as session:
+        session.exec(text("DELETE FROM device_inferences"))
         session.add_all(inferences)
         try:
             session.commit()

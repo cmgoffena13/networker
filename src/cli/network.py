@@ -1,13 +1,14 @@
+import json
 from typing import Optional
 
 import structlog
 from typer import Abort, Exit, Option, Typer
 
-from src.cli.console import display_port_info, echo
+from src.cli.console import console, display_port_info, echo
 from src.core.device import get_devices_on_network, get_open_ports
 from src.core.network import get_network, monitor_network
 from src.database.device_inference import db_infer_device_type
-from src.database.network import db_list_networks
+from src.database.network import db_list_networks, db_update_network
 from src.logging_conf import set_log_level
 from src.utils import lower_string
 
@@ -45,6 +46,7 @@ def scan(
     try:
         network = get_network(save=save)
         devices = get_devices_on_network(network, save=save)
+        echo("Press Ctrl+C to interrupt scanning and exit...")
         for device in devices:
             device_ports = get_open_ports(device, save=save)
             device_port_objects = [dp for dp, _, _ in device_ports]
@@ -78,6 +80,40 @@ def list(
             echo(f"Network: {network.model_dump_json(indent=2)}")
     except Exception as e:
         logger.error(f"Error listing networks: {e}")
+        raise Exit(code=1)
+
+
+@network_typer.command("update", help="Update the network information")
+def update(
+    network_id: int = Option(..., "--id", "-i", help="Network ID to update"),
+    data: str = Option(
+        ...,
+        "--data",
+        "-d",
+        help='JSON dictionary of fields to update (e.g., \'{"network_name": "my network"}\')',
+    ),
+    verbose: bool = Option(
+        False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
+    ),
+):
+    if verbose:
+        set_log_level("DEBUG")
+
+    try:
+        kwargs = json.loads(data)
+    except json.JSONDecodeError as e:
+        logger.error(f"Error: Invalid JSON - {e.msg}")
+        console.print(
+            'Example: --data \'{"network_name": "my network"}\'', style="yellow"
+        )
+        raise Exit(code=1)
+
+    try:
+        updated_network = db_update_network(network_id, **kwargs)
+        echo(f"Network {network_id} updated successfully")
+        echo(f"Updated network: {updated_network.model_dump_json(indent=2)}")
+    except Exception as e:
+        logger.error(f"Error updating network: {e}")
         raise Exit(code=1)
 
 

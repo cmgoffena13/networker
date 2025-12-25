@@ -1,10 +1,11 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import structlog
 from pendulum import now
 from sqlmodel import Session, select
 
 from src.database.db import engine
+from src.exceptions import NetworkNotFoundError
 from src.models.network import Network
 
 logger = structlog.getLogger(__name__)
@@ -23,7 +24,7 @@ def db_save_network(network: Network) -> Network:
             logger.debug(f"Network already exists, updating...")
             network_data = network.model_dump(
                 exclude_none=True,
-                exclude={"id", "router_mac", "public_ip", "created_at"},
+                exclude={"id", "network_name", "router_mac", "public_ip", "created_at"},
             )
             for key, value in network_data.items():
                 if hasattr(existing, key):
@@ -61,3 +62,27 @@ def db_get_network(network: Network) -> Optional[Network]:
 def db_list_networks() -> List[Network]:
     with Session(engine) as session:
         return session.exec(select(Network)).all()
+
+
+def db_update_network(id: int, **kwargs: Any) -> Network:
+    logger.debug(f"Updating network id: {id} with kwargs: {kwargs}")
+    with Session(engine) as session:
+        statement = select(Network).where(
+            Network.id == id,
+        )
+        existing = session.exec(statement).first()
+        if existing:
+            for key, value in kwargs.items():
+                if hasattr(existing, key):
+                    setattr(existing, key, value)
+            existing.updated_at = now()
+            session.add(existing)
+            try:
+                session.commit()
+                session.refresh(existing)
+            except Exception:
+                session.rollback()
+                raise
+            return existing
+        else:
+            raise NetworkNotFoundError(f"Network not found: {id}")

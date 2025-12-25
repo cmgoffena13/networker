@@ -11,7 +11,7 @@ class Network(SQLModel, table=True):
     __tablename__ = "networks"
 
     id: int | None = Field(default=None, primary_key=True, nullable=False)
-    ssid_name: str = Field(max_length=255)
+    network_name: str = Field(max_length=255)
     router_mac: str = Field(max_length=12)
     network_address: str = Field(max_length=16)
     public_ip: str = Field(max_length=16)

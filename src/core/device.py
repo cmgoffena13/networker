@@ -212,7 +212,6 @@ def get_open_ports(
 
     original_handler = signal.signal(signal.SIGINT, signal_handler)
 
-    echo("Press Ctrl+C to interrupt the scan(s)...")
     try:
         echo(
             f"Scanning device (MAC: {device.mac_address}, Name: {device.device_name}, ID: {device.id}) for open ports..."

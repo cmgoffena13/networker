@@ -82,3 +82,8 @@ def db_infer_device_type(
 
         logger.debug(f"No inferences found for device ID: {device_id}")
         return (None, None)
+
+
+def db_list_inferences() -> List[DeviceInference]:
+    with Session(engine) as session:
+        return session.exec(select(DeviceInference)).all()

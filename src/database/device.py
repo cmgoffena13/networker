@@ -25,7 +25,13 @@ def db_save_device(device: Device) -> Device:
             logger.debug(f"Device already exists, updating...")
             device_data = device.model_dump(
                 exclude_none=True,
-                exclude={"id", "network_id", "mac_address", "created_at"},
+                exclude={
+                    "id",
+                    "device_name",
+                    "network_id",
+                    "mac_address",
+                    "created_at",
+                },
             )
             for key, value in device_data.items():
                 if hasattr(existing, key):
