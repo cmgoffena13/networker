@@ -4,17 +4,16 @@ import socket
 import struct
 import subprocess
 import sys
-from typing import Optional, Tuple
+from typing import Optional
 
 import httpx
 import structlog
-from scapy.all import Packet, conf, get_if_addr, sniff
+from scapy.all import conf, get_if_addr, sniff
 from typer import Abort
 
 from src.cli.console import echo
 from src.core.device import get_router_mac
 from src.core.packet import PacketHandler
-from src.database.device import db_list_devices
 from src.database.network import db_save_network
 from src.exceptions import NetworkNotFoundError
 from src.models.network import Network
@@ -61,6 +60,8 @@ def get_wifi_network_name() -> Optional[str]:
             if match:
                 ssid = match.group(1).strip()
     logger.debug(f"WiFi network name: {ssid}")
+    if ssid == "<redacted>":
+        ssid = None
     return ssid
 
 
@@ -186,5 +187,7 @@ def monitor_network(filter: str = None) -> None:
         )
     except KeyboardInterrupt:
         raise Abort()
+    except Exception:
+        raise
     finally:
         turn_off_promiscuous_mode()

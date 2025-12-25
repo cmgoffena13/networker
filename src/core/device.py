@@ -27,6 +27,7 @@ def get_mac_vendor_name(
 ) -> Optional[str]:
     oui = mac_address[:8]
     logger.debug(f"Getting vendor name for OUI: {oui}")
+    vendor_name = None
 
     try:
         url = f"https://api.maclookup.app/v2/macs/{oui}/company/name"
@@ -36,48 +37,45 @@ def get_mac_vendor_name(
             vendor_name = response.text.strip()
             logger.debug(f"Vendor name for {mac_address}: {vendor_name}")
             sleep(0.6)  # Rate limit is 2 requests per second
-            if vendor_name and vendor_name != "*NO COMPANY*":
-                return vendor_name
-            if len(mac_address) > 1:
+            if vendor_name == "*NO COMPANY*" and len(mac_address) > 1:
                 second_hex = mac_address[1].upper()
                 if second_hex in ("2", "6", "A", "E"):
                     logger.debug(
                         f"MAC {mac_address} appears to be dynamic (second hex: {second_hex})"
                     )
-                    return "Dynamic MAC"
-            return None
+                    vendor_name = "Dynamic MAC"
         else:
             logger.warning(
                 f"Unexpected response from maclookup.app: {response.status_code}"
             )
-            return None
     except Exception as e:
         logger.error(f"Error getting vendor name for {mac_address}: {e}")
-        return None
+        raise Exit(code=1)
+
+    return vendor_name
 
 
 def get_router_mac() -> Optional[str]:
     logger.debug("Getting router MAC address...")
+    router_mac = None
+
     route = conf.route.route("0.0.0.0")
     router_ip = route[2]
 
-    if not router_ip:
-        return None
+    if router_ip:
+        arp_request = ARP(pdst=router_ip)
+        broadcast = Ether(dst="ff:ff:ff:ff:ff:ff")
+        arp_request_broadcast = broadcast / arp_request
 
-    # Send ARP request to get MAC address
-    arp_request = ARP(pdst=router_ip)
-    broadcast = Ether(dst="ff:ff:ff:ff:ff:ff")
-    arp_request_broadcast = broadcast / arp_request
+        answered, unanswered = srp(arp_request_broadcast, timeout=2, verbose=False)
 
-    # Send and receive ARP response
-    answered, _ = srp(arp_request_broadcast, timeout=2, verbose=False)
+        if answered:
+            router_mac = answered[0][1].hwsrc
+            logger.debug(f"Router MAC address: {router_mac}")
+        else:
+            logger.debug("No router MAC address found")
 
-    if answered:
-        logger.debug(f"Router MAC address: {answered[0][1].hwsrc}")
-        return answered[0][1].hwsrc
-
-    logger.debug("No router MAC address found")
-    return None
+    return router_mac
 
 
 def get_current_device_ip() -> Optional[str]:

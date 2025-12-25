@@ -85,8 +85,22 @@ def monitor(
 ):
     if verbose:
         set_log_level("DEBUG")
+    lower_filter = filter.lower() if filter else None
     try:
-        monitor_network(filter=filter)
+        monitor_network(filter=lower_filter)
     except Exception as e:
+        error_msg = str(e).lower()
+        if "cannot set filter" in error_msg:
+            echo(error_msg)
+            echo(
+                "Error: Invalid filter syntax. Use BPF (Berkeley Packet Filter) syntax."
+            )
+            echo("Examples:")
+            echo("  - 'udp port 5353' (for UDP port 5353)")
+            echo("  - 'tcp port 80' (for TCP port 80)")
+            echo("  - 'host 192.168.1.1' (for specific host)")
+            echo("  - 'arp' (for ARP packets)")
+            echo("  - 'icmp' (for ICMP packets)")
+            echo("  - 'udp port 5353 or tcp port 80' (for multiple conditions)")
         logger.error(f"Error monitoring network: {e}")
         raise Exit(code=1)
