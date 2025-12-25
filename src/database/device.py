@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 
 import structlog
 from pendulum import now
@@ -85,20 +85,10 @@ def db_get_device(id: int) -> Device:
         return session.exec(select(Device).where(Device.id == id)).first()
 
 
-def db_check_device_exists(device: Device, network_id: int) -> bool:
-    logger.debug(
-        f"Checking if device {device.mac_address} exists on network {network_id}..."
-    )
+def db_get_device_by_mac_address(mac_address: str, network_id: int) -> Optional[Device]:
     with Session(engine) as session:
-        statement = select(Device).where(
-            Device.network_id == network_id,
-            Device.mac_address == device.mac_address,
-        )
-        existing = session.exec(statement).first()
-
-        if existing:
-            logger.debug(f"Device already exists with id: {existing.id}")
-            return True
-        else:
-            logger.debug("Device is new!")
-            return False
+        return session.exec(
+            select(Device).where(
+                Device.mac_address == mac_address, Device.network_id == network_id
+            )
+        ).first()

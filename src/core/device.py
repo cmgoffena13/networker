@@ -12,7 +12,10 @@ from tqdm import tqdm
 from typer import Abort, Exit
 
 from src.cli.console import echo
-from src.database.device import db_check_device_exists, db_save_device
+from src.database.device import (
+    db_get_device_by_mac_address,
+    db_save_device,
+)
 from src.database.device_port import db_list_device_ports, db_save_device_ports
 from src.models.device import Device
 from src.models.device_port import DevicePort
@@ -163,8 +166,11 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
         if save:
             device = db_save_device(device)
         else:
-            if not db_check_device_exists(device, network.id):
+            saved_device = db_get_device_by_mac_address(device.mac_address, network.id)
+            if not saved_device:
                 echo(f"New device detected: {device.mac_address} ({device.ip_address})")
+            else:
+                device = saved_device
         devices.append(device)
 
     if current_ip and current_ip not in seen_ips:
@@ -172,10 +178,15 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
         if save:
             current_device = db_save_device(current_device)
         else:
-            if not db_check_device_exists(current_device, network.id):
+            saved_current_device = db_get_device_by_mac_address(
+                current_device.mac_address, network.id
+            )
+            if not saved_current_device:
                 echo(
                     f"New current device detected: {current_device.mac_address} ({current_device.ip_address})"
                 )
+            else:
+                current_device = saved_current_device
         devices.append(current_device)
 
     if save:
