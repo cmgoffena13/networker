@@ -54,6 +54,7 @@ $ networker network [OPTIONS] COMMAND [ARGS]...
 * `init`: Initialize the network and devices...
 * `scan`: Scan the network for open ports on devices
 * `list`: List information on networks stored
+* `monitor`: Monitor network traffic
 
 ### `networker network init`
 
@@ -98,6 +99,22 @@ $ networker network list [OPTIONS]
 
 **Options**:
 
+* `-v, --verbose`: Enable verbose (DEBUG) logging
+* `--help`: Show this message and exit.
+
+### `networker network monitor`
+
+Monitor network traffic
+
+**Usage**:
+
+```console
+$ networker network monitor [OPTIONS]
+```
+
+**Options**:
+
+* `-f, --filter TEXT`: Filter network traffic
 * `-v, --verbose`: Enable verbose (DEBUG) logging
 * `--help`: Show this message and exit.
 

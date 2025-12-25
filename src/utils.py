@@ -1,6 +1,7 @@
 import os
 import time
 from functools import wraps
+from typing import Optional
 
 import boto3
 import structlog
@@ -89,3 +90,7 @@ def azure_secret_helper(value: str) -> str:
     except Exception as e:
         logger.error(f"Error fetching Azure secret {value}: {e}")
         raise
+
+
+def lower_string(value: Optional[str]) -> Optional[str]:
+    return value.lower() if value else None

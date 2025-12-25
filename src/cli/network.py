@@ -1,3 +1,5 @@
+from typing import Optional
+
 import structlog
 from typer import Exit, Option, Typer
 
@@ -7,6 +9,7 @@ from src.core.network import get_network, monitor_network
 from src.database.device_inference import db_infer_device_type
 from src.database.network import db_list_networks
 from src.logging_conf import set_log_level
+from src.utils import lower_string
 
 logger = structlog.getLogger(__name__)
 network_typer = Typer(help="Network commands")
@@ -78,16 +81,17 @@ def list(
 
 @network_typer.command("monitor", help="Monitor network traffic")
 def monitor(
-    filter: str = Option(None, "--filter", "-f", help="Filter network traffic"),
+    filter: Optional[str] = Option(
+        None, "--filter", "-f", help="Filter network traffic", callback=lower_string
+    ),
     verbose: bool = Option(
         False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
     ),
 ):
     if verbose:
         set_log_level("DEBUG")
-    lower_filter = filter.lower() if filter else None
     try:
-        monitor_network(filter=lower_filter)
+        monitor_network(filter=filter)
     except Exception as e:
         error_msg = str(e).lower()
         if "cannot set filter" in error_msg:
