@@ -54,11 +54,6 @@ def db_seed_device_inferences():
             inference_reasoning="SMB and RDP are used for Windows",
         ),
         DeviceInference(
-            tcp_port_numbers=[53, 80, 443],
-            inference="Switch",
-            inference_reasoning="DNS + Web Server",
-        ),
-        DeviceInference(
             tcp_port_numbers=[53, 80, 443, 5000, 7547],
             inference="Router",
             inference_reasoning="DNS + Web Server + UPnP + ISP Remote Management",
