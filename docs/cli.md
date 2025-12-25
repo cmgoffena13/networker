@@ -19,6 +19,7 @@ $ networker [OPTIONS] COMMAND [ARGS]...
 * `init`: Initialize the sqlite database and seed...
 * `network`: Network commands
 * `device`: Device commands
+* `inference`: Inference commands
 
 ## `networker init`
 
@@ -54,6 +55,7 @@ $ networker network [OPTIONS] COMMAND [ARGS]...
 * `init`: Initialize the network and devices...
 * `scan`: Scan the network for open ports on devices
 * `list`: List information on networks stored
+* `update`: Update the network information
 * `monitor`: Monitor network traffic
 
 ### `networker network init`
@@ -99,6 +101,23 @@ $ networker network list [OPTIONS]
 
 **Options**:
 
+* `-v, --verbose`: Enable verbose (DEBUG) logging
+* `--help`: Show this message and exit.
+
+### `networker network update`
+
+Update the network information
+
+**Usage**:
+
+```console
+$ networker network update [OPTIONS]
+```
+
+**Options**:
+
+* `-i, --id INTEGER`: Network ID to update  [required]
+* `-d, --data TEXT`: JSON dictionary of fields to update (e.g., &#x27;{&quot;network_name&quot;: &quot;my network&quot;}&#x27;)  [required]
 * `-v, --verbose`: Enable verbose (DEBUG) logging
 * `--help`: Show this message and exit.
 
@@ -184,5 +203,54 @@ $ networker device update [OPTIONS]
 
 * `-i, --id INTEGER`: Device ID to update  [required]
 * `-d, --data TEXT`: JSON dictionary of fields to update (e.g., &#x27;{&quot;device_name&quot;: &quot;my device&quot;}&#x27;)  [required]
+* `-v, --verbose`: Enable verbose (DEBUG) logging
+* `--help`: Show this message and exit.
+
+## `networker inference`
+
+Inference commands
+
+**Usage**:
+
+```console
+$ networker inference [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+**Commands**:
+
+* `list`: List all inferences
+* `update`: Update inferences by deleting and re-seeding
+
+### `networker inference list`
+
+List all inferences
+
+**Usage**:
+
+```console
+$ networker inference list [OPTIONS]
+```
+
+**Options**:
+
+* `-v, --verbose`: Enable verbose (DEBUG) logging
+* `--help`: Show this message and exit.
+
+### `networker inference update`
+
+Update inferences by deleting and re-seeding
+
+**Usage**:
+
+```console
+$ networker inference update [OPTIONS]
+```
+
+**Options**:
+
 * `-v, --verbose`: Enable verbose (DEBUG) logging
 * `--help`: Show this message and exit.
