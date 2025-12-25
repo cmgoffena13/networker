@@ -24,12 +24,6 @@ class DevicePort(SQLModel, table=True):
             server_default=text("CURRENT_TIMESTAMP"),
         ),
     )
-    updated_at: Optional[DateTime] = Field(
-        sa_column=Column(
-            DateTimeTZ(timezone=False),
-            nullable=True,
-        )
-    )
 
     __table_args__ = (
         Index(

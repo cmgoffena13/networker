@@ -1,4 +1,5 @@
 import ipaddress
+import platform
 import socket
 from time import sleep
 from typing import List, Optional, Tuple
@@ -26,6 +27,7 @@ def get_mac_vendor_name(
 ) -> Optional[str]:
     oui = mac_address[:8]
     logger.debug(f"Getting vendor name for OUI: {oui}")
+
     try:
         url = f"https://api.maclookup.app/v2/macs/{oui}/company/name"
         response = httpx.get(url, timeout=10)
@@ -34,7 +36,16 @@ def get_mac_vendor_name(
             vendor_name = response.text.strip()
             logger.debug(f"Vendor name for {mac_address}: {vendor_name}")
             sleep(0.6)  # Rate limit is 2 requests per second
-            return vendor_name if vendor_name else None
+            if vendor_name and vendor_name != "*NO COMPANY*":
+                return vendor_name
+            if len(mac_address) > 1:
+                second_hex = mac_address[1].upper()
+                if second_hex in ("2", "6", "A", "E"):
+                    logger.debug(
+                        f"MAC {mac_address} appears to be dynamic (second hex: {second_hex})"
+                    )
+                    return "Dynamic MAC"
+            return None
         else:
             logger.warning(
                 f"Unexpected response from maclookup.app: {response.status_code}"
@@ -79,6 +90,34 @@ def get_current_device_ip() -> Optional[str]:
         return None
 
 
+def get_current_device_info(ip_address: str, network_id: int) -> Device:
+    try:
+        hostname = socket.gethostname()
+        os_name = platform.system()
+        device_name = f"{hostname} ({os_name})"
+
+        mac_address = get_if_hwaddr(conf.iface)
+        vendor_name = get_mac_vendor_name(mac_address)
+
+        device = Device(
+            network_id=network_id,
+            mac_address=mac_address,
+            mac_vendor=vendor_name,
+            ip_address=ip_address,
+            device_name=device_name,
+            current_device=True,
+            is_router=False,
+        )
+
+        logger.debug(
+            f"Current device info: {device_name}, IP: {ip_address}, MAC: {mac_address}"
+        )
+    except Exception as e:
+        logger.error(f"Error getting current device info: {e}")
+        raise Exit(code=1)
+    return device
+
+
 def get_devices_on_network(network: Network, save: bool = False) -> List[Device]:
     echo(f"Getting devices on network: {str(network.network_address)}...")
     devices = []
@@ -110,39 +149,27 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
 
         is_current_device = current_ip is not None and ip == current_ip
 
-        vendor_name = get_mac_vendor_name(mac)
-        device = Device(
-            network_id=network.id,
-            mac_address=mac,
-            mac_vendor=vendor_name,
-            ip_address=ip,
-            is_router=is_router,
-            current_device=is_current_device,
-        )
+        if is_current_device:
+            device = get_current_device_info(ip, network.id)
+        else:
+            vendor_name = get_mac_vendor_name(mac)
+            device = Device(
+                network_id=network.id,
+                mac_address=mac,
+                mac_vendor=vendor_name,
+                ip_address=ip,
+                is_router=is_router,
+                current_device=False,
+            )
         if save:
             device = db_save_device(device)
         devices.append(device)
 
     if current_ip and current_ip not in seen_ips:
-        try:
-            current_mac = get_if_hwaddr(conf.iface)
-            logger.debug(
-                f"Adding current device manually: IP={current_ip}, MAC={current_mac}"
-            )
-            vendor_name = get_mac_vendor_name(current_mac)
-            current_device = Device(
-                network_id=network.id,
-                mac_address=current_mac,
-                mac_vendor=vendor_name,
-                ip_address=current_ip,
-                is_router=False,
-                current_device=True,
-            )
-            if save:
-                current_device = db_save_device(current_device)
-            devices.append(current_device)
-        except Exception as e:
-            logger.warning(f"Could not get MAC address for current device: {e}")
+        current_device = get_current_device_info(current_ip, network.id)
+        if save:
+            current_device = db_save_device(current_device)
+        devices.append(current_device)
 
     if save:
         echo("Devices info logged to database.")

@@ -33,5 +33,5 @@ class Network(SQLModel, table=True):
     )
 
     __table_args__ = (
-        Index("ux_name_router_mac", "ssid_name", "router_mac", unique=True),
+        Index("ux_name_router_mac", "router_mac", "public_ip", unique=True),
     )
