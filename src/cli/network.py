@@ -1,7 +1,7 @@
 from typing import Optional
 
 import structlog
-from typer import Exit, Option, Typer
+from typer import Abort, Exit, Option, Typer
 
 from src.cli.console import display_port_info, echo
 from src.core.device import get_devices_on_network, get_open_ports
@@ -56,6 +56,8 @@ def scan(
             )
             for device_port, service_name, description in device_ports:
                 echo(display_port_info(device_port, service_name, description))
+    except Abort:
+        raise
     except Exception as e:
         logger.error(f"Error scanning network: {e}")
         raise Exit(code=1)
@@ -96,9 +98,7 @@ def monitor(
         error_msg = str(e).lower()
         if "cannot set filter" in error_msg:
             echo(error_msg)
-            echo(
-                "Error: Invalid filter syntax. Use BPF (Berkeley Packet Filter) syntax."
-            )
+            echo("Use BPF (Berkeley Packet Filter) syntax.")
             echo("Examples:")
             echo("  - 'udp port 5353' (for UDP port 5353)")
             echo("  - 'tcp port 80' (for TCP port 80)")

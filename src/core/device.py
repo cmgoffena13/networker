@@ -1,5 +1,6 @@
 import ipaddress
 import platform
+import signal
 import socket
 from time import sleep
 from typing import List, Optional, Tuple
@@ -11,7 +12,7 @@ from tqdm import tqdm
 from typer import Abort, Exit
 
 from src.cli.console import echo
-from src.database.device import db_save_device
+from src.database.device import db_check_device_exists, db_save_device
 from src.database.device_port import db_list_device_ports, db_save_device_ports
 from src.models.device import Device
 from src.models.device_port import DevicePort
@@ -161,12 +162,20 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
             )
         if save:
             device = db_save_device(device)
+        else:
+            if not db_check_device_exists(device, network.id):
+                echo(f"New device detected: {device.mac_address} ({device.ip_address})")
         devices.append(device)
 
     if current_ip and current_ip not in seen_ips:
         current_device = get_current_device_info(current_ip, network.id)
         if save:
             current_device = db_save_device(current_device)
+        else:
+            if not db_check_device_exists(current_device, network.id):
+                echo(
+                    f"New current device detected: {current_device.mac_address} ({current_device.ip_address})"
+                )
         devices.append(current_device)
 
     if save:
@@ -182,6 +191,17 @@ def get_open_ports(
     total_batches = (
         len(ports) + config.PORT_SCAN_BATCH_SIZE - 1
     ) // config.PORT_SCAN_BATCH_SIZE
+
+    interrupted = False
+
+    def signal_handler(signum, frame):
+        nonlocal interrupted
+        interrupted = True
+        echo("\nPort scan interrupted...")
+
+    original_handler = signal.signal(signal.SIGINT, signal_handler)
+
+    echo("Press Ctrl+C to interrupt the scan(s)...")
     try:
         echo(
             f"Scanning device (MAC: {device.mac_address}, Name: {device.device_name}, ID: {device.id}) for open ports..."
@@ -189,9 +209,12 @@ def get_open_ports(
         with tqdm(
             total=total_batches,
             colour="green",
-            bar_format="{percentage:3.0f}%|{bar}| ETA [{remaining}]\t\t",
+            bar_format="{percentage:3.0f}%|{bar}| ETA [{remaining}]  ",
         ) as pbar:
             for index in range(0, len(ports), config.PORT_SCAN_BATCH_SIZE):
+                if interrupted:
+                    break
+
                 batch = ports[index : index + config.PORT_SCAN_BATCH_SIZE]
                 batch_num = (index // config.PORT_SCAN_BATCH_SIZE) + 1
                 logger.debug(
@@ -203,6 +226,8 @@ def get_open_ports(
                 ]
                 answered, unanswered = sr(tcp_packets, timeout=1, verbose=False)
                 for sent, received in answered:
+                    if interrupted:
+                        break
                     if received.haslayer(TCP) and received[TCP].flags == 18:
                         port = received[TCP].sport
                         device_port = DevicePort(
@@ -212,11 +237,17 @@ def get_open_ports(
                         )
                         device_ports.append(device_port)
                         logger.debug(f"Found open TCP port: {port} on device.")
+
+                if interrupted:
+                    break
+
                 udp_packets = [
                     IP(dst=device.ip_address) / UDP(dport=port) for port in batch
                 ]
                 answered, unanswered = sr(udp_packets, timeout=0.5, verbose=False)
                 for sent, received in answered:
+                    if interrupted:
+                        break
                     if received.haslayer(UDP):
                         port = received[UDP].sport
                         device_port = DevicePort(
@@ -227,16 +258,25 @@ def get_open_ports(
                         device_ports.append(device_port)
                         logger.debug(f"Found open UDP port: {port} on device.")
                 pbar.update(1)
-        echo(f"Found {len(device_ports)} open ports on device.")
+
+        if interrupted:
+            signal.signal(signal.SIGINT, original_handler)
+            raise Abort()
+        else:
+            echo(f"Found {len(device_ports)} open ports on device.")
+
         if save:
             db_save_device_ports(device_ports, device.id)
             echo("Open ports saved to database.")
             result = db_list_device_ports(device.id)
         else:
             result = [(dp, None, None) for dp in device_ports]
-    except KeyboardInterrupt:
-        raise Abort()
-    except Exception as e:
-        logger.error(f"Error getting open ports for device: {device.mac_address}: {e}")
+
+    except Abort:
+        raise
+    except Exception:
         raise Exit(code=1)
+    finally:
+        signal.signal(signal.SIGINT, original_handler)
+
     return result

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import structlog
 from pendulum import now
@@ -46,6 +46,16 @@ def db_save_network(network: Network) -> Network:
                 session.rollback()
                 raise
             return network
+
+
+def db_get_network(network: Network) -> Optional[Network]:
+    with Session(engine) as session:
+        return session.exec(
+            select(Network).where(
+                Network.router_mac == network.router_mac,
+                Network.public_ip == network.public_ip,
+            )
+        ).first()
 
 
 def db_list_networks() -> List[Network]:

@@ -14,7 +14,7 @@ from typer import Abort
 from src.cli.console import echo
 from src.core.device import get_router_mac
 from src.core.packet import PacketHandler
-from src.database.network import db_save_network
+from src.database.network import db_get_network, db_save_network
 from src.exceptions import NetworkNotFoundError
 from src.models.network import Network
 
@@ -146,6 +146,10 @@ def get_network(save: bool = False) -> Optional[Network]:
         saved_network = db_save_network(network)
         network = saved_network
         echo("Network info logged to database.")
+    else:
+        saved_network = db_get_network(network)
+        if saved_network:
+            network = saved_network
     return network
 
 

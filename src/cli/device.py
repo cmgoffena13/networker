@@ -1,7 +1,7 @@
 import json
 
 import structlog
-from typer import Exit, Option, Typer
+from typer import Abort, Exit, Option, Typer
 
 from src.cli.console import (
     console,
@@ -44,6 +44,8 @@ def scan(
         )
         for device_port, service_name, description in device_ports:
             echo(display_port_info(device_port, service_name, description))
+    except Abort:
+        raise
     except Exception as e:
         logger.error(f"Error scanning device: {e}")
         raise Exit(code=1)
