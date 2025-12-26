@@ -46,7 +46,7 @@ def scan(
     try:
         network = get_network(save=save)
         devices = get_devices_on_network(network, save=save)
-        echo("Press Ctrl+C to interrupt scanning and exit...")
+        echo("\nPress Ctrl+C to interrupt scanning and exit...")
         for device in devices:
             device_ports = get_open_ports(device, save=save)
             device_port_objects = [dp for dp, _, _ in device_ports]

@@ -168,7 +168,10 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
         else:
             saved_device = db_get_device_by_mac_address(device.mac_address, network.id)
             if not saved_device:
-                echo(f"New device detected: {device.mac_address} ({device.ip_address})")
+                echo(
+                    f"New device detected: {device.mac_address} ({device.ip_address})",
+                    bold=True,
+                )
             else:
                 device = saved_device
         devices.append(device)
@@ -183,7 +186,8 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
             )
             if not saved_current_device:
                 echo(
-                    f"New current device detected: {current_device.mac_address} ({current_device.ip_address})"
+                    f"New current device detected: {current_device.mac_address} ({current_device.ip_address})",
+                    bold=True,
                 )
             else:
                 current_device = saved_current_device
@@ -214,12 +218,12 @@ def get_open_ports(
 
     try:
         echo(
-            f"Scanning device (MAC: {device.mac_address}, Name: {device.device_name}, ID: {device.id}) for open ports..."
+            f"\nScanning device (MAC: {device.mac_address}, Name: {device.device_name}, ID: {device.id}) for open ports..."
         )
         with tqdm(
             total=total_batches,
             colour="green",
-            bar_format="{percentage:3.0f}%|{bar}| ETA [{remaining}]  ",
+            bar_format=" {percentage:3.0f}%|{bar}| ETA [{remaining}] ",
         ) as pbar:
             for index in range(0, len(ports), config.PORT_SCAN_BATCH_SIZE):
                 if interrupted:

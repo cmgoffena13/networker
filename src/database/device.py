@@ -46,7 +46,10 @@ def db_save_device(device: Device) -> Device:
                 raise
             return existing
         else:
-            echo(f"New device detected: {device.mac_address} ({device.ip_address})")
+            echo(
+                f"New device detected: {device.mac_address} ({device.ip_address})",
+                bold=True,
+            )
             session.add(device)
             try:
                 session.commit()

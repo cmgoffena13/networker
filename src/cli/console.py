@@ -20,8 +20,11 @@ matrix_theme = Theme(
 console = Console(theme=matrix_theme)
 
 
-def echo(message: str, **kwargs):
-    console.print(message, style="green", **kwargs)
+def echo(message: str, bold: bool = False, **kwargs):
+    if not bold:
+        console.print(message, style="green", **kwargs)
+    else:
+        console.print(message, style="bold green", **kwargs)
 
 
 def display_port_info(
