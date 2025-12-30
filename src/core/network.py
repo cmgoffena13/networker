@@ -173,11 +173,11 @@ def turn_off_promiscuous_mode() -> None:
     logger.debug("Promiscuous mode turned off.")
 
 
-def monitor_network(filter: str = None) -> None:
+def monitor_network(filter: str = None, verbose: bool = False) -> None:
     logger.debug("Monitoring network...")
     echo("Starting network monitoring (press Ctrl+C to stop)...")
 
-    packet_handler = PacketHandler()
+    packet_handler = PacketHandler(verbose=verbose)
 
     try:
         turn_on_promiscuous_mode()

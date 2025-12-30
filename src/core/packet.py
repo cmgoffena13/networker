@@ -13,7 +13,8 @@ logger = structlog.getLogger(__name__)
 
 
 class PacketHandler:
-    def __init__(self):
+    def __init__(self, verbose: bool = False):
+        self.verbose = verbose
         self.devices = db_list_devices()
         self.local_ips = {device.ip_address for device in self.devices}
         self.local_mac_addresses_mapping = {
@@ -22,13 +23,23 @@ class PacketHandler:
         self.device_names_mapping = {
             device.ip_address: device.device_name for device in self.devices
         }
-        self.table = self._echo_headers()
+        if not self.verbose:
+            self.table = self._echo_headers()
 
     def _extract_arp_info(self, arp: ARP, packet_model: PacketModel) -> PacketModel:
         packet_model.request = arp.op == 1
         packet_model.transport_protocol = Protocol.ARP
         packet_model.source_ip = arp.psrc
         packet_model.destination_ip = arp.pdst
+
+        if arp.op == 1:
+            message = f"Who is IP Address {arp.pdst}?"
+        else:
+            message = f"I am IP Address {arp.psrc}"
+
+        additional_data = {"message": message}
+
+        packet_model.additional_data = additional_data
         return packet_model
 
     def _extract_tcp_info(
@@ -51,6 +62,11 @@ class PacketHandler:
         packet_model.source_port = udp.sport
         packet_model.destination_port = udp.dport
         packet_model.request = False
+
+        # Check if broadcast
+        if ip_layer.dst == "255.255.255.255" or ip_layer.dst.endswith(".255"):
+            packet_model.additional_data = {"broadcast": True}
+
         return packet_model
 
     def _extract_udp_dns_info(
@@ -270,7 +286,18 @@ class PacketHandler:
             )
         else:
             source_ip = packet_model.source_ip
-        if not packet_model.destination_ip:
+
+        is_broadcast_mac = packet_model.destination_mac.lower() == "ff:ff:ff:ff:ff:ff"
+        is_multicast = (
+            packet_model.destination_ip
+            and packet_model.destination_ip.startswith("224.")
+        )
+
+        if is_broadcast_mac:
+            destination_ip = "[yellow]Broadcast[/yellow]"
+        elif is_multicast:
+            destination_ip = "[yellow]Multicast[/yellow]"
+        elif not packet_model.destination_ip:
             destination_ip = (
                 self.local_mac_addresses_mapping.get(packet_model.destination_mac) or ""
             )
@@ -382,6 +409,7 @@ class PacketHandler:
             return
 
         ether = packet[Ether]
+        logger.debug(f"{ether.src} -> {ether.dst} - Packet Ether: {ether}")
         packet_model = PacketModel(
             timestamp=now(),
             request=False,
@@ -406,8 +434,10 @@ class PacketHandler:
             packet_model = self._extract_arp_info(packet[ARP], packet_model)
         elif packet.haslayer(IP):
             ip_layer = packet[IP]
+            logger.debug(f"{ip_layer.src} -> {ip_layer.dst} - IP Layer: {ip_layer}")
             if packet.haslayer(TCP):
                 tcp = packet[TCP]
+                logger.debug(f"\t\t{tcp.sport} -> {tcp.dport} - TCP Layer: {tcp}")
                 if tcp.dport in (80, 443) or tcp.sport in (80, 443):
                     packet_model = self._extract_tcp_http_info(
                         tcp, ip_layer, packet, packet_model
@@ -416,7 +446,9 @@ class PacketHandler:
                     packet_model = self._extract_tcp_info(tcp, ip_layer, packet_model)
             elif packet.haslayer(UDP):
                 udp = packet[UDP]
+                logger.debug(f"\t\t{udp.sport} -> {udp.dport} - UDP Layer: {udp}")
                 if packet.haslayer(DNS):
+                    logger.debug(f"\t\t\tDNS Layer: {packet[DNS]}")
                     if udp.dport == 5353 or udp.sport == 5353:
                         packet_model = self._extract_udp_mdns_info(
                             udp, packet[DNS], ip_layer, packet_model
@@ -428,4 +460,5 @@ class PacketHandler:
                 else:
                     packet_model = self._extract_udp_info(udp, ip_layer, packet_model)
 
-        self.echo_packet(packet_model)
+        if not self.verbose:
+            self.echo_packet(packet_model)

@@ -129,7 +129,7 @@ def monitor(
     if verbose:
         set_log_level("DEBUG")
     try:
-        monitor_network(filter=filter)
+        monitor_network(filter=filter, verbose=verbose)
     except Exception as e:
         error_msg = str(e).lower()
         if "cannot set filter" in error_msg:
