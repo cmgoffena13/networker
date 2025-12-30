@@ -1,7 +1,7 @@
 import structlog
 from pendulum import now
 from rich.table import Table
-from scapy.all import ARP, DNS, IP, TCP, UDP, Packet, Raw
+from scapy.all import ARP, DNS, IP, TCP, UDP, IPv6, Packet, Raw
 from scapy.layers.l2 import Ether
 
 from src.cli.console import console
@@ -29,8 +29,8 @@ class PacketHandler:
     def _extract_arp_info(self, arp: ARP, packet_model: PacketModel) -> PacketModel:
         packet_model.request = arp.op == 1
         packet_model.transport_protocol = Protocol.ARP
-        packet_model.source_ip = arp.psrc
-        packet_model.destination_ip = arp.pdst
+        packet_model.source_ip = str(arp.psrc)
+        packet_model.destination_ip = str(arp.pdst)
 
         if arp.op == 1:
             message = f"Who is IP Address {arp.pdst}?"
@@ -42,13 +42,35 @@ class PacketHandler:
         packet_model.additional_data = additional_data
         return packet_model
 
+    def _extract_ipv6_tcp_info(
+        self, tcp: TCP, ipv6_layer: IPv6, packet_model: PacketModel
+    ) -> PacketModel:
+        packet_model.request = bool(tcp.flags & 0x02)
+        packet_model.transport_protocol = Protocol.TCP
+        packet_model.source_ip = str(ipv6_layer.src)
+        packet_model.destination_ip = str(ipv6_layer.dst)
+        packet_model.source_port = tcp.sport
+        packet_model.destination_port = tcp.dport
+        return packet_model
+
+    def _extract_ipv6_udp_info(
+        self, udp: UDP, ipv6_layer: IPv6, packet_model: PacketModel
+    ) -> PacketModel:
+        packet_model.transport_protocol = Protocol.UDP
+        packet_model.source_ip = str(ipv6_layer.src) if ipv6_layer.src else None
+        packet_model.destination_ip = str(ipv6_layer.dst) if ipv6_layer.dst else None
+        packet_model.source_port = udp.sport
+        packet_model.destination_port = udp.dport
+        packet_model.request = False
+        return packet_model
+
     def _extract_tcp_info(
         self, tcp: TCP, ip_layer: IP, packet_model: PacketModel
     ) -> PacketModel:
         packet_model.request = bool(tcp.flags & 0x02)
         packet_model.transport_protocol = Protocol.TCP
-        packet_model.source_ip = ip_layer.src
-        packet_model.destination_ip = ip_layer.dst
+        packet_model.source_ip = str(ip_layer.src)
+        packet_model.destination_ip = str(ip_layer.dst)
         packet_model.source_port = tcp.sport
         packet_model.destination_port = tcp.dport
         return packet_model
@@ -57,20 +79,16 @@ class PacketHandler:
         self, udp: UDP, ip_layer: IP, packet_model: PacketModel
     ) -> PacketModel:
         packet_model.transport_protocol = Protocol.UDP
-        packet_model.source_ip = ip_layer.src
-        packet_model.destination_ip = ip_layer.dst
+        packet_model.source_ip = str(ip_layer.src) if ip_layer.src else None
+        packet_model.destination_ip = str(ip_layer.dst) if ip_layer.dst else None
         packet_model.source_port = udp.sport
         packet_model.destination_port = udp.dport
         packet_model.request = False
 
-        # Check if broadcast
-        if ip_layer.dst == "255.255.255.255" or ip_layer.dst.endswith(".255"):
-            packet_model.additional_data = {"broadcast": True}
-
         return packet_model
 
     def _extract_udp_dns_info(
-        self, udp: UDP, dns: DNS, ip_layer: IP, packet_model: PacketModel
+        self, udp: UDP, dns: DNS, ip_layer: IP | IPv6, packet_model: PacketModel
     ) -> PacketModel:
         packet_model.request = dns.qr == 0
         packet_model.transport_protocol = Protocol.UDP
@@ -136,12 +154,12 @@ class PacketHandler:
         return packet_model
 
     def _extract_udp_mdns_info(
-        self, udp: UDP, dns: DNS, ip_layer: IP, packet_model: PacketModel
+        self, udp: UDP, dns: DNS, ip_layer: IP | IPv6, packet_model: PacketModel
     ) -> PacketModel:
         packet_model.request = dns.qr == 0
         packet_model.transport_protocol = Protocol.UDP
-        packet_model.source_ip = ip_layer.src
-        packet_model.destination_ip = ip_layer.dst
+        packet_model.source_ip = str(ip_layer.src) if ip_layer.src else None
+        packet_model.destination_ip = str(ip_layer.dst) if ip_layer.dst else None
         packet_model.source_port = udp.sport
         packet_model.destination_port = udp.dport
         packet_model.application_protocol = "mDNS"
@@ -202,14 +220,14 @@ class PacketHandler:
         return packet_model
 
     def _extract_tcp_http_info(
-        self, tcp: TCP, ip_layer: IP, packet: Packet, packet_model: PacketModel
+        self, tcp: TCP, ip_layer: IP | IPv6, packet: Packet, packet_model: PacketModel
     ) -> PacketModel:
         packet_model.transport_protocol = Protocol.TCP
-        packet_model.source_ip = ip_layer.src
-        packet_model.destination_ip = ip_layer.dst
+        packet_model.source_ip = str(ip_layer.src)
+        packet_model.destination_ip = str(ip_layer.dst)
         packet_model.source_port = tcp.sport
         packet_model.destination_port = tcp.dport
-        # Determine if HTTP or HTTPS based on port
+
         if tcp.dport == 443 or tcp.sport == 443:
             packet_model.application_protocol = "HTTPS"
         else:
@@ -280,29 +298,42 @@ class PacketHandler:
             str(packet_model.destination_port) if packet_model.destination_port else ""
         )
 
-        if not packet_model.source_ip:
-            source_ip = (
-                self.local_mac_addresses_mapping.get(packet_model.source_mac) or ""
-            )
-        else:
-            source_ip = packet_model.source_ip
+        source_ip = packet_model.source_ip
 
-        is_broadcast_mac = packet_model.destination_mac.lower() == "ff:ff:ff:ff:ff:ff"
-        is_multicast = (
+        label = None
+        if packet_model.destination_mac.lower() == "ff:ff:ff:ff:ff:ff":
+            label = "ARP Broadcast"
+        elif (
+            packet_model.application_protocol == "mDNS"
+            or packet_model.destination_port == 5353
+            or packet_model.source_port == 5353
+        ):
+            label = "mDNS Multicast"
+        elif packet_model.destination_mac.lower().startswith("33:33") or (
             packet_model.destination_ip
-            and packet_model.destination_ip.startswith("224.")
-        )
+            and ":" in packet_model.destination_ip
+            and packet_model.destination_ip.startswith("ff")
+        ):
+            label = "IPv6 Multicast"
+        elif packet_model.destination_ip and packet_model.destination_ip.startswith(
+            "224."
+        ):
+            label = "IPv4 Multicast"
 
-        if is_broadcast_mac:
-            destination_ip = "[yellow]Broadcast[/yellow]"
-        elif is_multicast:
-            destination_ip = "[yellow]Multicast[/yellow]"
-        elif not packet_model.destination_ip:
-            destination_ip = (
-                self.local_mac_addresses_mapping.get(packet_model.destination_mac) or ""
-            )
+        if label:
+            destination_ip = f"[bold yellow]{label}[/bold yellow]"
         else:
             destination_ip = packet_model.destination_ip
+
+        if not source_ip or not destination_ip:
+            logger.warning(
+                f"Blank IP detected - source_ip: {source_ip or 'None'}, "
+                f"destination_ip: {destination_ip or 'None'}, "
+                f"source_mac: {packet_model.source_mac}, "
+                f"destination_mac: {packet_model.destination_mac}, "
+                f"protocol: {packet_model.transport_protocol.value}"
+            )
+            return "", "", ""  # Skip displaying packets with blank IPs
 
         source_is_internal = source_ip in self.local_ips
         dest_is_internal = destination_ip in self.local_ips
@@ -352,16 +383,19 @@ class PacketHandler:
         internal_device_name = self.device_names_mapping.get(internal_ip)
         external_device_name = self.device_names_mapping.get(external_ip)
         internal_name_str = f" ({internal_device_name})" if internal_device_name else ""
+
+        is_internal_special = internal_ip.startswith("[bold yellow]")
         internal_str = (
             f"{internal_ip}:[yellow]{internal_port}[/yellow]{internal_name_str}"
-            if internal_port
+            if internal_port and not is_internal_special
             else f"{internal_ip}{internal_name_str}"
         )
 
         external_name_str = f" ({external_device_name})" if external_device_name else ""
+        is_external_special = external_ip.startswith("[bold yellow]")
         external_str = (
             f"{external_ip}:[yellow]{external_port}[/yellow]{external_name_str}"
-            if external_port
+            if external_port and not is_external_special
             else f"{external_ip}{external_name_str}"
         )
 
@@ -402,7 +436,6 @@ class PacketHandler:
             additional_data_str,
         )
         console.print(self.table)
-        console.print("\n")
 
     def handle_packet(self, packet: Packet) -> None:
         if not packet.haslayer(Ether):
@@ -430,9 +463,46 @@ class PacketHandler:
                     f"Payload length is too long: {packet_model.payload_length}"
                 )
 
-        if packet.haslayer(ARP) and not packet.haslayer(IP):
+        if (
+            packet.haslayer(ARP)
+            and not packet.haslayer(IP)
+            and not packet.haslayer(IPv6)
+        ):
             packet_model = self._extract_arp_info(packet[ARP], packet_model)
-        elif packet.haslayer(IP):
+        elif packet.haslayer(IPv6):
+            ipv6_layer = packet[IPv6]
+            logger.debug(
+                f"{ipv6_layer.src} -> {ipv6_layer.dst} - IPv6 Layer: {ipv6_layer}"
+            )
+            if packet.haslayer(TCP):
+                tcp = packet[TCP]
+                logger.debug(f"\t\t{tcp.sport} -> {tcp.dport} - TCP Layer: {tcp}")
+                if tcp.dport in (80, 443) or tcp.sport in (80, 443):
+                    packet_model = self._extract_tcp_http_info(
+                        tcp, ipv6_layer, packet, packet_model
+                    )
+                else:
+                    packet_model = self._extract_ipv6_tcp_info(
+                        tcp, ipv6_layer, packet_model
+                    )
+            elif packet.haslayer(UDP):
+                udp = packet[UDP]
+                logger.debug(f"\t\t{udp.sport} -> {udp.dport} - UDP Layer: {udp}")
+                if packet.haslayer(DNS):
+                    logger.debug(f"\t\t\tDNS Layer: {packet[DNS]}")
+                    if udp.dport == 5353 or udp.sport == 5353:
+                        packet_model = self._extract_udp_mdns_info(
+                            udp, packet[DNS], ipv6_layer, packet_model
+                        )
+                    if udp.dport == 53 or udp.sport == 53:
+                        packet_model = self._extract_udp_dns_info(
+                            udp, packet[DNS], ipv6_layer, packet_model
+                        )
+                else:
+                    packet_model = self._extract_ipv6_udp_info(
+                        udp, ipv6_layer, packet_model
+                    )
+        elif packet.haslayer(IP) and not packet.haslayer(IPv6):
             ip_layer = packet[IP]
             logger.debug(f"{ip_layer.src} -> {ip_layer.dst} - IP Layer: {ip_layer}")
             if packet.haslayer(TCP):
@@ -459,6 +529,18 @@ class PacketHandler:
                         )
                 else:
                     packet_model = self._extract_udp_info(udp, ip_layer, packet_model)
+
+        if packet_model.source_ip is None or packet_model.destination_ip is None:
+            logger.warning(
+                f"Blank IP detected - source_ip: {packet_model.source_ip or 'None'}, "
+                f"destination_ip: {packet_model.destination_ip or 'None'}, "
+                f"source_mac: {packet_model.source_mac}, "
+                f"destination_mac: {packet_model.destination_mac}, "
+                f"protocol: {packet_model.transport_protocol.value}"
+            )
+            logger.warning(f"Packet: {packet}")
+            logger.warning(f"Packet Model: {packet_model}")
+            return
 
         if not self.verbose:
             self.echo_packet(packet_model)
