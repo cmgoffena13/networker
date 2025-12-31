@@ -1,11 +1,15 @@
+from ipaddress import IPv6Address
+
 import structlog
 from pendulum import now
 from rich.table import Table
 from scapy.all import ARP, DNS, ICMP, IP, TCP, UDP, IPv6, Packet, Raw
+from scapy.contrib.igmp import IGMP
 from scapy.layers.inet6 import (
     ICMPv6EchoReply,
     ICMPv6EchoRequest,
     ICMPv6MLQuery2,
+    ICMPv6MLReport,
     ICMPv6MLReport2,
     ICMPv6ND_NA,
     ICMPv6ND_NS,
@@ -34,6 +38,11 @@ class PacketHandler:
         self.mac_to_device_mapping = {
             device.mac_address: device.device_name for device in self.devices
         }
+        self.router_ip = None
+        for device in self.devices:
+            if device.is_router:
+                self.router_ip = device.ip_address
+                break
         if not self.verbose:
             self.table = self._echo_headers()
 
@@ -44,9 +53,9 @@ class PacketHandler:
         packet_model.destination_ip = str(arp.pdst)
 
         if arp.op == 1:
-            message = f"Who is IP Address {arp.pdst}?"
+            message = f"Who is IPv4 Address {arp.pdst}?"
         else:
-            message = f"I am IP Address {arp.psrc}"
+            message = f"I am IPv4 Address {arp.psrc}"
 
         additional_data = {"message": message}
 
@@ -64,8 +73,31 @@ class PacketHandler:
         packet_model.destination_port = tcp.dport
         return packet_model
 
+    def _get_mldv2_record_info(self, record) -> tuple[str | None, int]:
+        maddr = None
+        if hasattr(record, "dst"):
+            maddr = str(record.dst)
+        elif hasattr(record, "mla"):
+            maddr = str(record.mla)
+        elif hasattr(record, "maddr"):
+            maddr = str(record.maddr)
+
+        num_sources = 0
+        if hasattr(record, "sources_number"):
+            num_sources = record.sources_number
+        elif hasattr(record, "nsources"):
+            num_sources = record.nsources
+        elif hasattr(record, "sources") and record.sources:
+            num_sources = len(record.sources)
+
+        return maddr, num_sources
+
     def _extract_ipv6_icmp_info(
-        self, icmpv6: Packet, ipv6_layer: IPv6, packet_model: PacketModel
+        self,
+        icmpv6: Packet,
+        ipv6_layer: IPv6,
+        packet_model: PacketModel,
+        packet: Packet,
     ) -> PacketModel:
         packet_model.transport_protocol = Protocol.ICMP
         packet_model.source_ip = str(ipv6_layer.src)
@@ -73,35 +105,127 @@ class PacketHandler:
         packet_model.request = False
 
         if isinstance(icmpv6, ICMPv6ND_NS):
-            icmp_type = "ND Neighbor Solicitation"
             packet_model.request = True
             if hasattr(icmpv6, "tgt"):
-                target = str(icmpv6.tgt)
                 packet_model.additional_data = {
-                    "message": f"Who has IPv6 address {target}? Please send your MAC."
+                    "message": f"Who is IPv6 address {icmpv6.tgt}?"
                 }
         elif isinstance(icmpv6, ICMPv6ND_NA):
-            icmp_type = "ND Neighbor Advertisement"
             if hasattr(icmpv6, "tgt"):
-                target = str(icmpv6.tgt)
                 packet_model.additional_data = {
-                    "message": f"I am IPv6 address {target}"
+                    "message": f"I am IPv6 address {icmpv6.tgt}"
                 }
         elif isinstance(icmpv6, ICMPv6EchoRequest):
-            icmp_type = "Echo Request"
             packet_model.request = True
-        elif isinstance(icmpv6, ICMPv6EchoReply):
-            icmp_type = "Echo Reply"
         elif isinstance(icmpv6, ICMPv6MLQuery2):
-            icmp_type = "MLD Query"
-        elif isinstance(icmpv6, ICMPv6MLReport2):
-            icmp_type = "MLD Report"
-        elif hasattr(icmpv6, "type"):
-            icmp_type = f"ICMPv6 Type {icmpv6.type}"
-        else:
-            icmp_type = "ICMPv6"
+            packet_model.request = True
+            if hasattr(icmpv6, "mladdr"):
+                packet_model.additional_data = {"multicast_address": str(icmpv6.mladdr)}
+        elif isinstance(icmpv6, ICMPv6MLReport):
+            listening = []
+            seen_groups = set()
+            records_count = 0
 
-        packet_model.application_protocol = icmp_type
+            if hasattr(icmpv6, "records") and icmpv6.records:
+                records_count = (
+                    len(icmpv6.records)
+                    if hasattr(icmpv6, "nrecords")
+                    else len(list(icmpv6.records))
+                )
+                for record in icmpv6.records:
+                    if hasattr(record, "mla"):
+                        maddr = str(record.mla)
+                        if maddr not in seen_groups:
+                            listening.append(
+                                {
+                                    "multicast_group": maddr,
+                                    "filtered": hasattr(record, "num_sources")
+                                    and record.num_sources > 0,
+                                }
+                            )
+                            seen_groups.add(maddr)
+            elif hasattr(icmpv6, "mladdr"):
+                maddr = str(icmpv6.mladdr)
+                listening.append({"multicast_group": maddr, "filtered": False})
+                records_count = 1
+
+            if listening:
+                packet_model.additional_data = {
+                    "records_count": records_count,
+                    "listening": listening,
+                }
+        elif isinstance(icmpv6, ICMPv6MLReport2):
+            listening = []
+            seen_groups = set()
+
+            records_list = []
+            if hasattr(icmpv6, "records") and icmpv6.records:
+                records_list = list(icmpv6.records)
+
+            expected_count = (
+                icmpv6.records_number
+                if hasattr(icmpv6, "records_number")
+                else len(records_list)
+            )
+
+            if expected_count > len(records_list):
+                try:
+                    raw_payload = (
+                        bytes(icmpv6.payload)
+                        if hasattr(icmpv6, "payload") and icmpv6.payload
+                        else bytes(icmpv6)
+                    )
+                    offset = 8
+                    for i in range(expected_count):
+                        if offset + 4 > len(raw_payload):
+                            break
+                        num_sources = (raw_payload[offset + 2] << 8) + raw_payload[
+                            offset + 3
+                        ]
+                        mla_start = offset + 4
+                        if mla_start + 16 <= len(raw_payload):
+                            maddr = str(
+                                IPv6Address(raw_payload[mla_start : mla_start + 16])
+                            )
+                            if maddr not in seen_groups:
+                                listening.append(
+                                    {
+                                        "multicast_group": maddr,
+                                        "filtered": num_sources > 0,
+                                    }
+                                )
+                                seen_groups.add(maddr)
+                            aux_len = raw_payload[offset + 1]
+                            offset += 4 + 16 + (num_sources * 16) + (aux_len * 4)
+                        else:
+                            break
+                except (IndexError, ValueError, AttributeError):
+                    for record in records_list:
+                        maddr, num_sources = self._get_mldv2_record_info(record)
+                        if maddr and maddr not in seen_groups:
+                            listening.append(
+                                {"multicast_group": maddr, "filtered": num_sources > 0}
+                            )
+                            seen_groups.add(maddr)
+            else:
+                for record in records_list:
+                    maddr, num_sources = self._get_mldv2_record_info(record)
+                    if maddr and maddr not in seen_groups:
+                        listening.append(
+                            {"multicast_group": maddr, "filtered": num_sources > 0}
+                        )
+                        seen_groups.add(maddr)
+
+            if listening:
+                records_count = (
+                    icmpv6.records_number
+                    if hasattr(icmpv6, "records_number")
+                    else len(listening)
+                )
+                packet_model.additional_data = {
+                    "records_count": records_count,
+                    "listening": listening,
+                }
         return packet_model
 
     def _extract_ipv6_udp_info(
@@ -116,13 +240,33 @@ class PacketHandler:
         return packet_model
 
     def _extract_igmp_info(
-        self, ip_layer: IP, packet_model: PacketModel
+        self, ip_layer: IP, packet: Packet, packet_model: PacketModel
     ) -> PacketModel:
         packet_model.transport_protocol = Protocol.IGMP
         packet_model.source_ip = str(ip_layer.src)
         packet_model.destination_ip = str(ip_layer.dst)
         packet_model.request = False
-        packet_model.application_protocol = "IGMP"
+
+        igmp = packet.getlayer(IGMP)
+        igmp_type = None
+        gaddr = "0.0.0.0"
+
+        if igmp and hasattr(igmp, "type"):
+            igmp_type = igmp.type
+            gaddr = str(igmp.gaddr) if hasattr(igmp, "gaddr") else "0.0.0.0"
+        elif hasattr(ip_layer, "payload") and ip_layer.payload:
+            payload = bytes(ip_layer.payload)
+            if len(payload) >= 1:
+                igmp_type = payload[0]
+
+        if igmp_type == 0x11:
+            packet_model.request = True
+            packet_model.additional_data = {"group_address": gaddr}
+        elif igmp_type == 0x16:
+            packet_model.additional_data = {"group_address": gaddr}
+        elif igmp_type == 0x17:
+            packet_model.additional_data = {"group_address": gaddr}
+
         return packet_model
 
     def _extract_icmp_info(
@@ -133,22 +277,8 @@ class PacketHandler:
         packet_model.destination_ip = str(ip_layer.dst)
         packet_model.request = False
 
-        icmp_type = None
         if icmp.type == 8:
-            icmp_type = "Echo Request"
             packet_model.request = True
-        elif icmp.type == 0:
-            icmp_type = "Echo Reply"
-        elif icmp.type == 3:
-            icmp_type = "Destination Unreachable"
-        elif icmp.type == 11:
-            icmp_type = "Time Exceeded"
-        elif hasattr(icmp, "type"):
-            icmp_type = f"ICMP Type {icmp.type}"
-        else:
-            icmp_type = "ICMP"
-
-        packet_model.application_protocol = icmp_type
         return packet_model
 
     def _extract_tcp_info(
@@ -391,6 +521,12 @@ class PacketHandler:
         if packet_model.destination_mac.lower() == "ff:ff:ff:ff:ff:ff":
             label = "ARP Broadcast"
         elif (
+            packet_model.destination_ip
+            and ":" in packet_model.destination_ip
+            and packet_model.destination_ip.startswith("ff02::1:ff")
+        ):
+            label = "Solicited-Node Multicast"
+        elif (
             packet_model.application_protocol == "mDNS"
             or packet_model.destination_port == 5353
             or packet_model.source_port == 5353
@@ -421,6 +557,11 @@ class PacketHandler:
                 f"protocol: {packet_model.transport_protocol.value}"
             )
             return "", "", ""  # Skip displaying packets with blank IPs
+
+        if source_ip == "0.0.0.0" and self.router_ip:
+            source_ip = self.router_ip
+        if destination_ip == "0.0.0.0" and self.router_ip:
+            destination_ip = self.router_ip
 
         source_is_internal = source_ip in self.local_ips
         dest_is_internal = destination_ip in self.local_ips
@@ -612,6 +753,7 @@ class PacketHandler:
                 or packet.haslayer(ICMPv6EchoRequest)
                 or packet.haslayer(ICMPv6EchoReply)
                 or packet.haslayer(ICMPv6MLQuery2)
+                or packet.haslayer(ICMPv6MLReport)
                 or packet.haslayer(ICMPv6MLReport2)
             ):
                 # Handle ICMPv6 packets
@@ -626,12 +768,14 @@ class PacketHandler:
                     icmpv6 = packet[ICMPv6EchoReply]
                 elif packet.haslayer(ICMPv6MLQuery2):
                     icmpv6 = packet[ICMPv6MLQuery2]
+                elif packet.haslayer(ICMPv6MLReport):
+                    icmpv6 = packet[ICMPv6MLReport]
                 elif packet.haslayer(ICMPv6MLReport2):
                     icmpv6 = packet[ICMPv6MLReport2]
 
                 if icmpv6:
                     packet_model = self._extract_ipv6_icmp_info(
-                        icmpv6, ipv6_layer, packet_model
+                        icmpv6, ipv6_layer, packet_model, packet
                     )
             else:
                 return
@@ -668,7 +812,7 @@ class PacketHandler:
                 packet_model = self._extract_icmp_info(icmp, ip_layer, packet_model)
             elif ip_layer.proto == 2:
                 logger.debug(f"\t\tIGMP Layer: protocol 2")
-                packet_model = self._extract_igmp_info(ip_layer, packet_model)
+                packet_model = self._extract_igmp_info(ip_layer, packet, packet_model)
 
         if packet_model.source_ip is None or packet_model.destination_ip is None:
             logger.warning(
