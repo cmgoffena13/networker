@@ -111,6 +111,7 @@ class PacketHandler:
                     "message": f"Who is IPv6 address {icmpv6.tgt}?"
                 }
         elif isinstance(icmpv6, ICMPv6ND_NA):
+            packet_model.request = False
             if hasattr(icmpv6, "tgt"):
                 packet_model.additional_data = {
                     "message": f"I am IPv6 address {icmpv6.tgt}"
