@@ -5,3 +5,5 @@ class Protocol(str, Enum):
     ARP = "ARP"
     TCP = "TCP"
     UDP = "UDP"
+    ICMP = "ICMP"
+    IGMP = "IGMP"

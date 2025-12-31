@@ -1,7 +1,15 @@
 import structlog
 from pendulum import now
 from rich.table import Table
-from scapy.all import ARP, DNS, IP, TCP, UDP, IPv6, Packet, Raw
+from scapy.all import ARP, DNS, ICMP, IP, TCP, UDP, IPv6, Packet, Raw
+from scapy.layers.inet6 import (
+    ICMPv6EchoReply,
+    ICMPv6EchoRequest,
+    ICMPv6MLQuery2,
+    ICMPv6MLReport2,
+    ICMPv6ND_NA,
+    ICMPv6ND_NS,
+)
 from scapy.layers.l2 import Ether
 
 from src.cli.console import console
@@ -20,8 +28,11 @@ class PacketHandler:
         self.local_mac_addresses_mapping = {
             device.mac_address: device.ip_address for device in self.devices
         }
-        self.device_names_mapping = {
+        self.ip_to_device_mapping = {
             device.ip_address: device.device_name for device in self.devices
+        }
+        self.mac_to_device_mapping = {
+            device.mac_address: device.device_name for device in self.devices
         }
         if not self.verbose:
             self.table = self._echo_headers()
@@ -53,6 +64,46 @@ class PacketHandler:
         packet_model.destination_port = tcp.dport
         return packet_model
 
+    def _extract_ipv6_icmp_info(
+        self, icmpv6: Packet, ipv6_layer: IPv6, packet_model: PacketModel
+    ) -> PacketModel:
+        packet_model.transport_protocol = Protocol.ICMP
+        packet_model.source_ip = str(ipv6_layer.src)
+        packet_model.destination_ip = str(ipv6_layer.dst)
+        packet_model.request = False
+
+        if isinstance(icmpv6, ICMPv6ND_NS):
+            icmp_type = "ND Neighbor Solicitation"
+            packet_model.request = True
+            if hasattr(icmpv6, "tgt"):
+                target = str(icmpv6.tgt)
+                packet_model.additional_data = {
+                    "message": f"Who has IPv6 address {target}? Please send your MAC."
+                }
+        elif isinstance(icmpv6, ICMPv6ND_NA):
+            icmp_type = "ND Neighbor Advertisement"
+            if hasattr(icmpv6, "tgt"):
+                target = str(icmpv6.tgt)
+                packet_model.additional_data = {
+                    "message": f"I am IPv6 address {target}"
+                }
+        elif isinstance(icmpv6, ICMPv6EchoRequest):
+            icmp_type = "Echo Request"
+            packet_model.request = True
+        elif isinstance(icmpv6, ICMPv6EchoReply):
+            icmp_type = "Echo Reply"
+        elif isinstance(icmpv6, ICMPv6MLQuery2):
+            icmp_type = "MLD Query"
+        elif isinstance(icmpv6, ICMPv6MLReport2):
+            icmp_type = "MLD Report"
+        elif hasattr(icmpv6, "type"):
+            icmp_type = f"ICMPv6 Type {icmpv6.type}"
+        else:
+            icmp_type = "ICMPv6"
+
+        packet_model.application_protocol = icmp_type
+        return packet_model
+
     def _extract_ipv6_udp_info(
         self, udp: UDP, ipv6_layer: IPv6, packet_model: PacketModel
     ) -> PacketModel:
@@ -62,6 +113,42 @@ class PacketHandler:
         packet_model.source_port = udp.sport
         packet_model.destination_port = udp.dport
         packet_model.request = False
+        return packet_model
+
+    def _extract_igmp_info(
+        self, ip_layer: IP, packet_model: PacketModel
+    ) -> PacketModel:
+        packet_model.transport_protocol = Protocol.IGMP
+        packet_model.source_ip = str(ip_layer.src)
+        packet_model.destination_ip = str(ip_layer.dst)
+        packet_model.request = False
+        packet_model.application_protocol = "IGMP"
+        return packet_model
+
+    def _extract_icmp_info(
+        self, icmp: ICMP, ip_layer: IP, packet_model: PacketModel
+    ) -> PacketModel:
+        packet_model.transport_protocol = Protocol.ICMP
+        packet_model.source_ip = str(ip_layer.src)
+        packet_model.destination_ip = str(ip_layer.dst)
+        packet_model.request = False
+
+        icmp_type = None
+        if icmp.type == 8:
+            icmp_type = "Echo Request"
+            packet_model.request = True
+        elif icmp.type == 0:
+            icmp_type = "Echo Reply"
+        elif icmp.type == 3:
+            icmp_type = "Destination Unreachable"
+        elif icmp.type == 11:
+            icmp_type = "Time Exceeded"
+        elif hasattr(icmp, "type"):
+            icmp_type = f"ICMP Type {icmp.type}"
+        else:
+            icmp_type = "ICMP"
+
+        packet_model.application_protocol = icmp_type
         return packet_model
 
     def _extract_tcp_info(
@@ -321,7 +408,7 @@ class PacketHandler:
             label = "IPv4 Multicast"
 
         if label:
-            destination_ip = f"[bold yellow]{label}[/bold yellow]"
+            destination_ip = f"[bold purple]{label}[/bold purple]"
         else:
             destination_ip = packet_model.destination_ip
 
@@ -380,23 +467,29 @@ class PacketHandler:
             external_mac = packet_model.destination_mac
             direction = "->" if packet_model.request else "<-"
 
-        internal_device_name = self.device_names_mapping.get(internal_ip)
-        external_device_name = self.device_names_mapping.get(external_ip)
-        internal_name_str = f" ({internal_device_name})" if internal_device_name else ""
+        def _format_ip_string(ip: str, port: str, device_name: str | None) -> str:
+            name_str = f" ({device_name})" if device_name else ""
+            is_special = ip.startswith("[bold purple]")
+            if port and not is_special:
+                return f"{ip}:[yellow]{port}[/yellow]{name_str}"
+            return f"{ip}{name_str}"
 
-        is_internal_special = internal_ip.startswith("[bold yellow]")
-        internal_str = (
-            f"{internal_ip}:[yellow]{internal_port}[/yellow]{internal_name_str}"
-            if internal_port and not is_internal_special
-            else f"{internal_ip}{internal_name_str}"
+        internal_device_name = None
+        if not internal_ip.startswith("[bold purple]"):
+            internal_device_name = self.ip_to_device_mapping.get(internal_ip)
+            if not internal_device_name and internal_mac:
+                internal_device_name = self.mac_to_device_mapping.get(internal_mac)
+
+        external_device_name = None
+        if not external_ip.startswith("[bold purple]"):
+            external_device_name = self.ip_to_device_mapping.get(external_ip)
+            if not external_device_name and external_mac:
+                external_device_name = self.mac_to_device_mapping.get(external_mac)
+        internal_str = _format_ip_string(
+            internal_ip, internal_port, internal_device_name
         )
-
-        external_name_str = f" ({external_device_name})" if external_device_name else ""
-        is_external_special = external_ip.startswith("[bold yellow]")
-        external_str = (
-            f"{external_ip}:[yellow]{external_port}[/yellow]{external_name_str}"
-            if external_port and not is_external_special
-            else f"{external_ip}{external_name_str}"
+        external_str = _format_ip_string(
+            external_ip, external_port, external_device_name
         )
 
         if direction == "->":
@@ -421,8 +514,8 @@ class PacketHandler:
             protocol_formatted = f"[bold green]{protocol_value}[/bold green]"
         elif protocol_value == "UDP":
             protocol_formatted = f"[yellow]{protocol_value}[/yellow]"
-        elif protocol_value == "ARP":
-            protocol_formatted = f"[red]{protocol_value}[/red]"
+        elif protocol_value in ("ARP", "ICMP", "IGMP"):
+            protocol_formatted = f"[bold red]{protocol_value}[/bold red]"
         else:
             protocol_formatted = protocol_value
 
@@ -502,6 +595,35 @@ class PacketHandler:
                     packet_model = self._extract_ipv6_udp_info(
                         udp, ipv6_layer, packet_model
                     )
+            elif (
+                packet.haslayer(ICMPv6ND_NS)
+                or packet.haslayer(ICMPv6ND_NA)
+                or packet.haslayer(ICMPv6EchoRequest)
+                or packet.haslayer(ICMPv6EchoReply)
+                or packet.haslayer(ICMPv6MLQuery2)
+                or packet.haslayer(ICMPv6MLReport2)
+            ):
+                # Handle ICMPv6 packets
+                icmpv6 = None
+                if packet.haslayer(ICMPv6ND_NS):
+                    icmpv6 = packet[ICMPv6ND_NS]
+                elif packet.haslayer(ICMPv6ND_NA):
+                    icmpv6 = packet[ICMPv6ND_NA]
+                elif packet.haslayer(ICMPv6EchoRequest):
+                    icmpv6 = packet[ICMPv6EchoRequest]
+                elif packet.haslayer(ICMPv6EchoReply):
+                    icmpv6 = packet[ICMPv6EchoReply]
+                elif packet.haslayer(ICMPv6MLQuery2):
+                    icmpv6 = packet[ICMPv6MLQuery2]
+                elif packet.haslayer(ICMPv6MLReport2):
+                    icmpv6 = packet[ICMPv6MLReport2]
+
+                if icmpv6:
+                    packet_model = self._extract_ipv6_icmp_info(
+                        icmpv6, ipv6_layer, packet_model
+                    )
+            else:
+                return
         elif packet.haslayer(IP) and not packet.haslayer(IPv6):
             ip_layer = packet[IP]
             logger.debug(f"{ip_layer.src} -> {ip_layer.dst} - IP Layer: {ip_layer}")
@@ -529,6 +651,13 @@ class PacketHandler:
                         )
                 else:
                     packet_model = self._extract_udp_info(udp, ip_layer, packet_model)
+            elif packet.haslayer(ICMP):
+                icmp = packet[ICMP]
+                logger.debug(f"\t\tICMP Layer: {icmp}")
+                packet_model = self._extract_icmp_info(icmp, ip_layer, packet_model)
+            elif ip_layer.proto == 2:
+                logger.debug(f"\t\tIGMP Layer: protocol 2")
+                packet_model = self._extract_igmp_info(ip_layer, packet_model)
 
         if packet_model.source_ip is None or packet_model.destination_ip is None:
             logger.warning(
