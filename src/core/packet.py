@@ -468,7 +468,9 @@ class PacketHandler:
             direction = "->" if packet_model.request else "<-"
 
         def _format_ip_string(ip: str, port: str, device_name: str | None) -> str:
-            name_str = f" ({device_name})" if device_name else ""
+            name_str = (
+                f" ([bold green]{device_name}[/bold green])" if device_name else ""
+            )
             is_special = ip.startswith("[bold purple]")
             if port and not is_special:
                 return f"{ip}:[yellow]{port}[/yellow]{name_str}"
@@ -536,12 +538,21 @@ class PacketHandler:
 
         ether = packet[Ether]
         logger.debug(f"{ether.src} -> {ether.dst} - Packet Ether: {ether}")
+
+        ether_type_map = {
+            0x0800: "IPv4",
+            0x0806: "ARP",
+            0x86DD: "IPv6",
+        }
+        ether_type_hex = hex(ether.type)[2:].upper().zfill(4)
+        ethernet_type = ether_type_map.get(ether.type, ether_type_hex)
+
         packet_model = PacketModel(
             timestamp=now(),
             request=False,
             source_mac=ether.src,
             destination_mac=ether.dst,
-            ethernet_type=hex(ether.type)[2:].upper().zfill(4),
+            ethernet_type=ethernet_type,
             transport_protocol=Protocol.TCP,
             payload_length=0,
         )
