@@ -3,7 +3,7 @@ from typing import Optional
 from pydantic_extra_types.pendulum_dt import DateTime
 from sqlalchemy import JSON, Column
 from sqlalchemy import Enum as SQLEnum
-from sqlmodel import Field, SQLModel
+from sqlmodel import BigInteger, Field, SQLModel
 
 from src.protocol import Protocol
 
@@ -11,7 +11,9 @@ from src.protocol import Protocol
 class Packet(SQLModel, table=True):
     __tablename__ = "packets"
 
-    id: int | None = Field(default=None, primary_key=True, nullable=False)
+    id: int | None = Field(
+        sa_column=Column(BigInteger, nullable=False, primary_key=True, default=None),
+    )
     timestamp: DateTime
     request: bool
     source_mac: str = Field(max_length=12)
