@@ -1,4 +1,5 @@
 import ipaddress
+import platform
 import re
 import socket
 import struct
@@ -9,7 +10,7 @@ from typing import Optional
 import httpx
 import structlog
 from scapy.all import conf, get_if_addr, sniff
-from typer import Abort
+from typer import Abort, Exit
 
 from src.cli.console import echo
 from src.core.device import get_router_mac
@@ -151,28 +152,6 @@ def get_network(save: bool = False) -> Optional[Network]:
     return network
 
 
-def turn_on_promiscuous_mode() -> None:
-    logger.debug("Turning on promiscuous mode...")
-    subprocess.run(
-        ["ifconfig", str(conf.iface), "promisc"],
-        capture_output=True,
-        text=True,
-        timeout=5,
-    )
-    logger.debug("Promiscuous mode turned on.")
-
-
-def turn_off_promiscuous_mode() -> None:
-    logger.debug("Turning off promiscuous mode...")
-    subprocess.run(
-        ["ifconfig", str(conf.iface), "-promisc"],
-        capture_output=True,
-        text=True,
-        timeout=5,
-    )
-    logger.debug("Promiscuous mode turned off.")
-
-
 def monitor_network(filter: str = None, verbose: bool = False) -> None:
     logger.debug("Monitoring network...")
     echo("Starting network monitoring (press Ctrl+C to stop)...")
@@ -180,16 +159,14 @@ def monitor_network(filter: str = None, verbose: bool = False) -> None:
     packet_handler = PacketHandler(verbose=verbose)
 
     try:
-        turn_on_promiscuous_mode()
         sniff(
             iface=str(conf.iface),
             prn=packet_handler.handle_packet,
             store=False,
             filter=filter,
+            promisc=True,
         )
     except KeyboardInterrupt:
         raise Abort()
     except Exception:
         raise
-    finally:
-        turn_off_promiscuous_mode()
