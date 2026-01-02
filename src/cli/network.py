@@ -5,7 +5,7 @@ import structlog
 from typer import Abort, Exit, Option, Typer
 
 from src.cli.console import console, display_port_info, echo
-from src.core.device import get_devices_on_network, get_open_ports
+from src.core.device import get_devices_on_network, scan_device_for_open_ports
 from src.core.network import get_network, monitor_network, test_internet_connectivity
 from src.database.device_inference import db_infer_device_type
 from src.database.network import db_list_networks, db_update_network
@@ -50,16 +50,7 @@ def scan(
         devices = get_devices_on_network(network, save=save)
         echo("\nPress Ctrl+C to interrupt scanning and exit...")
         for device in devices:
-            device_ports = get_open_ports(device, save=save)
-            device_port_objects = [dp for dp, _, _ in device_ports]
-            device_inference, device_inference_match = db_infer_device_type(
-                device_port_objects, device.id, save=save
-            )
-            echo(
-                f"Device {device.id} Inference: {device_inference}, Match: {device_inference_match}"
-            )
-            for device_port, service_name, description in device_ports:
-                echo(display_port_info(device_port, service_name, description))
+            scan_device_for_open_ports(device, save=save)
     except Abort:
         raise
     except Exception as e:

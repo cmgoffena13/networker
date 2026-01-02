@@ -11,11 +11,12 @@ from scapy.all import ARP, IP, TCP, UDP, Ether, conf, get_if_hwaddr, sr, srp
 from tqdm import tqdm
 from typer import Abort, Exit
 
-from src.cli.console import echo
+from src.cli.console import display_port_info, echo
 from src.database.device import (
     db_get_device_by_mac_address,
     db_save_device,
 )
+from src.database.device_inference import db_infer_device_type
 from src.database.device_port import db_list_device_ports, db_save_device_ports
 from src.exceptions import RouterMacNotFoundError
 from src.models.device import Device
@@ -201,6 +202,19 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
     if save:
         echo("Devices info logged to database.")
     return devices
+
+
+def scan_device_for_open_ports(device: Device, save: bool = False) -> None:
+    device_ports = get_open_ports(device, save=save)
+    device_port_objects = [dp for dp, _, _ in device_ports]
+    device_inference, device_inference_match = db_infer_device_type(
+        device_port_objects, device.id, save=save
+    )
+    echo(
+        f"Device {device.id} Inference: {device_inference}, Match: {device_inference_match}"
+    )
+    for device_port, service_name, description in device_ports:
+        echo(display_port_info(device_port, service_name, description))
 
 
 def get_open_ports(
