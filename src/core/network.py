@@ -195,7 +195,8 @@ def test_internet_connectivity(save: bool = False) -> None:
         upload_speed_bytes = st.upload()
         upload_speed_mbps = convert_bytes_to_mbps(upload_speed_bytes)
         echo(f"Upload speed: {upload_speed_mbps} Mbps")
-        last_network_speed_test = db_get_latest_network_speed_test(network.id)
+        if network.id:
+            last_network_speed_test = db_get_latest_network_speed_test(network.id)
         if save:
             network_speed_test = NetworkSpeedTest(
                 network_id=network.id,
@@ -210,17 +211,29 @@ def test_internet_connectivity(save: bool = False) -> None:
 
             if download_speed_mbps > last_download:
                 increase = ((download_speed_mbps - last_download) / last_download) * 100
-                echo(f"Download speed has increased by {increase:.1f}%")
+                echo(
+                    f"Download speed has increased by {increase:.1f}% "
+                    f"(from {last_download} Mbps to {download_speed_mbps} Mbps)"
+                )
             elif download_speed_mbps < last_download:
                 decrease = ((last_download - download_speed_mbps) / last_download) * 100
-                echo(f"Download speed has decreased by {decrease:.1f}%")
+                echo(
+                    f"Download speed has decreased by {decrease:.1f}% "
+                    f"(from {last_download} Mbps to {download_speed_mbps} Mbps)"
+                )
 
             if upload_speed_mbps > last_upload:
                 increase = ((upload_speed_mbps - last_upload) / last_upload) * 100
-                echo(f"Upload speed has increased by {increase:.1f}%")
+                echo(
+                    f"Upload speed has increased by {increase:.1f}% "
+                    f"(from {last_upload} Mbps to {upload_speed_mbps} Mbps)"
+                )
             elif upload_speed_mbps < last_upload:
                 decrease = ((last_upload - upload_speed_mbps) / last_upload) * 100
-                echo(f"Upload speed has decreased by {decrease:.1f}%")
+                echo(
+                    f"Upload speed has decreased by {decrease:.1f}% "
+                    f"(from {last_upload} Mbps to {upload_speed_mbps} Mbps)"
+                )
 
     except SpeedtestException as e:
         logger.error(f"Speedtest Exception: {e}")
