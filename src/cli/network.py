@@ -4,34 +4,15 @@ from typing import Optional
 import structlog
 from typer import Abort, Exit, Option, Typer
 
-from src.cli.console import console, display_port_info, echo
+from src.cli.console import console, echo
 from src.core.device import get_devices_on_network, scan_device_for_open_ports
 from src.core.network import get_network, monitor_network, test_internet_connectivity
-from src.database.device_inference import db_infer_device_type
 from src.database.network import db_list_networks, db_update_network
 from src.logging_conf import set_log_level
 from src.utils import lower_string
 
 logger = structlog.getLogger(__name__)
 network_typer = Typer(help="Network commands")
-
-
-@network_typer.command(
-    "create", help="Create and save the network and devices information"
-)
-def init(
-    verbose: bool = Option(
-        False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
-    ),
-):
-    if verbose:
-        set_log_level("DEBUG")
-    try:
-        network = get_network(save=True)
-        get_devices_on_network(network, save=True)
-    except Exception as e:
-        logger.error(f"Error initializing network: {e}")
-        raise Exit(code=1)
 
 
 @network_typer.command("scan", help="Scan the network for open ports on devices")
@@ -42,15 +23,19 @@ def scan(
     verbose: bool = Option(
         False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
     ),
+    ports: bool = Option(
+        False, "--ports", "-p", help="Scan the network for open ports on devices"
+    ),
 ):
     if verbose:
         set_log_level("DEBUG")
     try:
         network = get_network(save=save)
         devices = get_devices_on_network(network, save=save)
-        echo("\nPress Ctrl+C to interrupt scanning and exit...")
-        for device in devices:
-            scan_device_for_open_ports(device, save=save)
+        if ports:
+            echo("\nPress Ctrl+C to interrupt scanning and exit...")
+            for device in devices:
+                scan_device_for_open_ports(device, save=save)
     except Abort:
         raise
     except Exception as e:

@@ -52,27 +52,11 @@ $ networker network [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
-* `create`: Create and save the network and devices...
 * `scan`: Scan the network for open ports on devices
 * `list`: List information on networks stored
 * `update`: Update the network information
 * `monitor`: Monitor network traffic
 * `test`: Test internet connectivity
-
-### `networker network create`
-
-Create and save the network and devices information
-
-**Usage**:
-
-```console
-$ networker network create [OPTIONS]
-```
-
-**Options**:
-
-* `-v, --verbose`: Enable verbose (DEBUG) logging
-* `--help`: Show this message and exit.
 
 ### `networker network scan`
 
@@ -88,6 +72,7 @@ $ networker network scan [OPTIONS]
 
 * `-s, --save`: Save the network scan results to the database
 * `-v, --verbose`: Enable verbose (DEBUG) logging
+* `-p, --ports`: Scan the network for open ports on devices
 * `--help`: Show this message and exit.
 
 ### `networker network list`

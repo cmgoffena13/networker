@@ -220,11 +220,6 @@ def test_internet_connectivity(save: bool = False) -> None:
         download_speed_mbps, upload_speed_mbps, ping_time_ms = (
             speedtest_internet_connectivity()
         )
-        last_network_speed_test = None
-        if network.id and current_device.id:
-            last_network_speed_test = db_get_latest_network_speed_test(
-                network.id, current_device.id
-            )
         if save:
             network_speed_test = NetworkSpeedTest(
                 network_id=network.id,
@@ -236,6 +231,11 @@ def test_internet_connectivity(save: bool = False) -> None:
             db_save_network_speed_test(network_speed_test)
             echo("Network speed test saved to database.")
 
+        last_network_speed_test = None
+        if network.id and current_device.id:
+            last_network_speed_test = db_get_latest_network_speed_test(
+                network.id, current_device.id
+            )
         if last_network_speed_test:
             echo("\n")
             created_at = pendulum.instance(

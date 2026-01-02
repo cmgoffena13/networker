@@ -94,6 +94,11 @@ def db_seed_device_inferences():
             inference_reasoning="Bonjour/Zeroconf discovery + AFP file sharing",
         ),
         DeviceInference(
+            tcp_port_numbers=[49152, 62078],
+            inference="iOS Device",
+            inference_reasoning="Temporary local app connections and Apple Sync port",
+        ),
+        DeviceInference(
             udp_port_numbers=[5353],
             inference="iOS Device",
             inference_reasoning="Persistent Bonjour/mDNS (all Apple mobile)",
