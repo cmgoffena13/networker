@@ -106,11 +106,14 @@ def monitor(
     exclude_host: bool = Option(
         False, "--exclude-host", "-e", help="Exclude the host from the network traffic"
     ),
+    dns: bool = Option(False, "--dns", "-d", help="Monitor DNS traffic"),
 ):
     if verbose:
         set_log_level("DEBUG")
     try:
-        monitor_network(filter=filter, verbose=verbose, exclude_host=exclude_host)
+        monitor_network(
+            filter=filter, verbose=verbose, exclude_host=exclude_host, dns=dns
+        )
     except Exception as e:
         error_msg = str(e).lower()
         if "cannot set filter" in error_msg:

@@ -4,12 +4,14 @@ import socket
 import struct
 import subprocess
 import sys
+from threading import Thread
 from typing import Optional, Tuple
 
 import httpx
 import pendulum
 import structlog
-from scapy.all import conf, get_if_addr, sniff
+from rich.prompt import Prompt
+from scapy.all import conf, get_if_addr, get_if_list, sniff
 from speedtest import Speedtest, SpeedtestException
 from typer import Abort
 
@@ -162,27 +164,94 @@ def get_network(save: bool = False) -> Optional[Network]:
     return network
 
 
+def get_available_interfaces() -> list[str]:
+    return get_if_list()
+
+
+def get_active_interfaces() -> list[str]:
+    active_ifaces = []
+
+    def test_iface(iface: str) -> None:
+        def pkt_handler(pkt):
+            if pkt:
+                active_ifaces.append(iface)
+                raise KeyboardInterrupt
+
+        try:
+            sniff(iface=iface, prn=pkt_handler, timeout=2, store=0)
+        except Exception:
+            pass
+
+    threads = []
+    for iface in get_if_list():
+        if iface.startswith(("en", "ap")):
+            t = Thread(target=test_iface, args=(iface,))
+            t.start()
+            threads.append(t)
+
+    for t in threads:
+        t.join(timeout=3)
+
+    return list(set(active_ifaces))
+
+
 def monitor_network(
-    filter: str = None, verbose: bool = False, exclude_host: bool = False
+    filter: str = None,
+    verbose: bool = False,
+    exclude_host: bool = False,
+    dns: bool = False,
 ) -> None:
     logger.debug("Monitoring network...")
-    echo("Starting network monitoring (press Ctrl+C to stop)...")
+
+    echo("Detecting active network interfaces...")
+    interfaces = get_active_interfaces()
+    if not interfaces:
+        interfaces = get_available_interfaces()
+        if not interfaces:
+            echo("No network interfaces found")
+            raise Exception("No network interfaces available")
+
+    if len(interfaces) == 1:
+        echo(f"Using default interface: {interfaces[0]}")
+        iface = interfaces[0]
+    else:
+        echo("\nAvailable network interfaces:")
+        for idx, interface in enumerate(interfaces, 1):
+            echo(f"  {idx}. {interface}")
+
+        while True:
+            choice = Prompt.ask(f"\nSelect interface [1-{len(interfaces)}]")
+            try:
+                idx = int(choice)
+                if 1 <= idx <= len(interfaces):
+                    iface = interfaces[idx - 1]
+                    break
+                echo(f"Please enter a number between 1 and {len(interfaces)}")
+            except ValueError:
+                echo("Please enter a valid number")
 
     packet_handler = PacketHandler(verbose=verbose, exclude_host=exclude_host)
 
-    if exclude_host and packet_handler.host_ip:
-        host_filter = f"not host {packet_handler.host_ip}"
-        if filter:
-            filter = f"{filter} and {host_filter}"
-        else:
-            filter = host_filter
+    filter_parts = []
+    if filter:
+        filter_parts.append(filter)
+    if exclude_host:
+        filter_parts.append(f"not host {packet_handler.host_ip}")
+    if dns:
+        filter_parts.append("(port 53 or port 5353)")
+    final_filter = " and ".join(filter_parts) if filter_parts else None
+
+    filter_msg = f' with filter: "{final_filter}"' if final_filter else ""
+    echo(
+        f"Starting network monitoring on {iface}{filter_msg} (press Ctrl+C to stop)..."
+    )
 
     try:
         sniff(
-            iface=str(conf.iface),
+            iface=iface,
             prn=packet_handler.handle_packet,
             store=False,
-            filter=filter,
+            filter=final_filter,
             promisc=True,
         )
     except KeyboardInterrupt:
