@@ -17,15 +17,18 @@ from src.database.device import (
     db_save_device,
 )
 from src.database.device_port import db_list_device_ports, db_save_device_ports
+from src.exceptions import RouterMacNotFoundError
 from src.models.device import Device
 from src.models.device_port import DevicePort
 from src.models.network import Network
 from src.protocol import Protocol
 from src.settings import config
+from src.utils import retry
 
 logger = structlog.getLogger(__name__)
 
 
+@retry()
 def get_mac_vendor_name(
     mac_address: str,
 ) -> Optional[str]:
@@ -59,6 +62,7 @@ def get_mac_vendor_name(
     return vendor_name
 
 
+@retry()
 def get_router_mac() -> Optional[str]:
     logger.debug("Getting router MAC address...")
     router_mac = None
@@ -77,11 +81,13 @@ def get_router_mac() -> Optional[str]:
             router_mac = answered[0][1].hwsrc
             logger.debug(f"Router MAC address: {router_mac}")
         else:
-            logger.debug("No router MAC address found")
+            logger.error("No router MAC address found")
+            raise RouterMacNotFoundError("Unable to acquire router MAC address")
 
     return router_mac
 
 
+@retry()
 def get_current_device_ip() -> Optional[str]:
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:

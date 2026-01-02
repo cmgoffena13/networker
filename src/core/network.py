@@ -23,10 +23,12 @@ from src.database.network import (
 )
 from src.exceptions import NetworkNotFoundError
 from src.models.network import Network, NetworkSpeedTest
+from src.utils import retry
 
 logger = structlog.getLogger(__name__)
 
 
+@retry()
 def get_wifi_network_name() -> Optional[str]:
     logger.debug("Getting WiFi network name...")
     ssid = None
@@ -118,6 +120,7 @@ def get_network_info() -> Optional[ipaddress.IPv4Network]:
     return None
 
 
+@retry()
 def get_public_ip() -> Optional[str]:
     logger.debug("Getting public IP...")
     try:
