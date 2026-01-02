@@ -58,7 +58,7 @@ def get_mac_vendor_name(
             )
     except Exception as e:
         logger.error(f"Error getting vendor name for {mac_address}: {e}")
-        raise Exit(code=1)
+        raise e
 
     return vendor_name
 
@@ -95,7 +95,7 @@ def get_current_device_ip() -> Optional[str]:
             ip = s.getsockname()[0]
             return ip
     except Exception:
-        return None
+        raise
 
 
 def get_current_device_info(ip_address: str, network_id: int) -> Device:
@@ -122,7 +122,7 @@ def get_current_device_info(ip_address: str, network_id: int) -> Device:
         )
     except Exception as e:
         logger.error(f"Error getting current device info: {e}")
-        raise Exit(code=1)
+        raise e
     return device
 
 
@@ -308,7 +308,7 @@ def get_open_ports(
     except Abort:
         raise
     except Exception:
-        raise Exit(code=1)
+        raise
     finally:
         signal.signal(signal.SIGINT, original_handler)
 

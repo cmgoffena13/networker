@@ -4,14 +4,14 @@ import socket
 import struct
 import subprocess
 import sys
-from typing import Optional
+from typing import Optional, Tuple
 
 import httpx
 import pendulum
 import structlog
 from scapy.all import conf, get_if_addr, sniff
 from speedtest import Speedtest, SpeedtestException
-from typer import Abort, Exit
+from typer import Abort
 
 from src.cli.console import echo
 from src.core.device import get_router_mac
@@ -132,7 +132,7 @@ def get_public_ip() -> Optional[str]:
             return ip_address
     except Exception as e:
         logger.error(f"Error getting public IP: {e}")
-        return None
+        raise e
 
 
 def get_network(save: bool = False) -> Optional[Network]:
@@ -186,8 +186,8 @@ def convert_bytes_to_mbps(bytes: int) -> float:
 
 
 @retry()
-def speedtest_internet_connectivity(network: Network) -> None:
-    logger.debug("Testing internet connectivity...")
+def speedtest_internet_connectivity() -> Tuple[float, float]:
+    echo("Testing internet speed from device...")
     st = Speedtest(secure=True)
     st.get_best_server()
     echo("Measuring download speed...")
@@ -204,9 +204,7 @@ def speedtest_internet_connectivity(network: Network) -> None:
 def test_internet_connectivity(save: bool = False) -> None:
     try:
         network = get_network()
-        download_speed_mbps, upload_speed_mbps = speedtest_internet_connectivity(
-            network
-        )
+        download_speed_mbps, upload_speed_mbps = speedtest_internet_connectivity()
         last_network_speed_test = None
         if network.id:
             last_network_speed_test = db_get_latest_network_speed_test(network.id)

@@ -30,6 +30,11 @@ def setup_logging(log_level: str = None):
         message=".*MAC address to reach destination not found. Using broadcast.*",
         module="scapy.arch",
     )
+    warnings.filterwarnings(
+        "ignore",
+        message=".*Socket.*failed with.*maximum recursion depth exceeded.*",
+    )
+    logging.getLogger("scapy").setLevel(logging.ERROR)
 
     structlog.configure(
         processors=[

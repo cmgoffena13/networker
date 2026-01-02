@@ -155,6 +155,7 @@ def test(
     if verbose:
         set_log_level("DEBUG")
     try:
+        echo("Testing network internet speed from device...")
         test_internet_connectivity(save=save)
     except Exception as e:
         logger.error(f"Error testing internet connectivity: {e}")
