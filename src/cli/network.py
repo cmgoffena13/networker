@@ -16,7 +16,9 @@ logger = structlog.getLogger(__name__)
 network_typer = Typer(help="Network commands")
 
 
-@network_typer.command("init", help="Initialize the network and devices information")
+@network_typer.command(
+    "create", help="Create and save the network and devices information"
+)
 def init(
     verbose: bool = Option(
         False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
@@ -139,6 +141,7 @@ def monitor(
             echo("  - 'udp port 5353' (for UDP port 5353)")
             echo("  - 'tcp port 80' (for TCP port 80)")
             echo("  - 'host 192.168.1.1' (for specific host)")
+            echo("  - 'not host 192.168.1.1' (for all hosts except 192.168.1.1)")
             echo("  - 'arp' (for ARP packets)")
             echo("  - 'icmp' (for ICMP packets)")
             echo("  - 'udp port 5353 or tcp port 80' (for multiple conditions)")

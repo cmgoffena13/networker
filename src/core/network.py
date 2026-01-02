@@ -7,6 +7,7 @@ import sys
 from typing import Optional
 
 import httpx
+import pendulum
 import structlog
 from scapy.all import conf, get_if_addr, sniff
 from speedtest import Speedtest, SpeedtestException
@@ -184,20 +185,29 @@ def convert_bytes_to_mbps(bytes: int) -> float:
     return round(bytes / 1024 / 1024 * 8, 2)
 
 
-def test_internet_connectivity(save: bool = False) -> None:
+@retry()
+def speedtest_internet_connectivity(network: Network) -> None:
     logger.debug("Testing internet connectivity...")
+    st = Speedtest(secure=True)
+    st.get_best_server()
+    echo("Measuring download speed...")
+    download_speed_bytes = st.download()
+    download_speed_mbps = convert_bytes_to_mbps(download_speed_bytes)
+    echo(f"Download speed: {download_speed_mbps} Mbps")
+    echo("Measuring upload speed...")
+    upload_speed_bytes = st.upload()
+    upload_speed_mbps = convert_bytes_to_mbps(upload_speed_bytes)
+    echo(f"Upload speed: {upload_speed_mbps} Mbps")
+    return download_speed_mbps, upload_speed_mbps
+
+
+def test_internet_connectivity(save: bool = False) -> None:
     try:
         network = get_network()
-        st = Speedtest()
-        st.get_best_server()
-        echo("Measuring download speed...")
-        download_speed_bytes = st.download()
-        download_speed_mbps = convert_bytes_to_mbps(download_speed_bytes)
-        echo(f"Download speed: {download_speed_mbps} Mbps")
-        echo("Measuring upload speed...")
-        upload_speed_bytes = st.upload()
-        upload_speed_mbps = convert_bytes_to_mbps(upload_speed_bytes)
-        echo(f"Upload speed: {upload_speed_mbps} Mbps")
+        download_speed_mbps, upload_speed_mbps = speedtest_internet_connectivity(
+            network
+        )
+        last_network_speed_test = None
         if network.id:
             last_network_speed_test = db_get_latest_network_speed_test(network.id)
         if save:
@@ -207,8 +217,15 @@ def test_internet_connectivity(save: bool = False) -> None:
                 upload_speed_mbps=upload_speed_mbps,
             )
             db_save_network_speed_test(network_speed_test)
+            echo("Network speed test saved to database.")
 
         if last_network_speed_test:
+            created_at = pendulum.instance(
+                last_network_speed_test.created_at
+            ).in_timezone(pendulum.local_timezone())
+            echo(
+                f"Last network speed test on {created_at.format('YYYY-MM-DD hh:mm:ss A')}"
+            )
             last_download = last_network_speed_test.download_speed_mbps
             last_upload = last_network_speed_test.upload_speed_mbps
 
@@ -240,7 +257,6 @@ def test_internet_connectivity(save: bool = False) -> None:
 
     except SpeedtestException as e:
         logger.error(f"Speedtest Exception: {e}")
-        raise Exit(code=1)
+        raise e
     except Exception as e:
-        logger.error(f"Error testing internet connectivity: {e}")
-        raise Exit(code=1)
+        raise e

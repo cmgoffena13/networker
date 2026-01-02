@@ -52,21 +52,21 @@ $ networker network [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
-* `init`: Initialize the network and devices...
+* `create`: Create and save the network and devices...
 * `scan`: Scan the network for open ports on devices
 * `list`: List information on networks stored
 * `update`: Update the network information
 * `monitor`: Monitor network traffic
 * `test`: Test internet connectivity
 
-### `networker network init`
+### `networker network create`
 
-Initialize the network and devices information
+Create and save the network and devices information
 
 **Usage**:
 
 ```console
-$ networker network init [OPTIONS]
+$ networker network create [OPTIONS]
 ```
 
 **Options**:

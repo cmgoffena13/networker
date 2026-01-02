@@ -1,7 +1,10 @@
+import sqlite3
 from pathlib import Path
 
+import pendulum
 import polars as pl
 import structlog
+from pydantic_extra_types.pendulum_dt import Date, DateTime
 from sqlalchemy import text
 from sqlmodel import Session, SQLModel, create_engine
 
@@ -11,7 +14,22 @@ from src.protocol import Protocol
 
 logger = structlog.getLogger(__name__)
 
-engine = create_engine("sqlite:///networker.db")
+
+def _register_pendulum_adapters():
+    sqlite3.register_adapter(pendulum.DateTime, lambda val: val.isoformat(" "))
+    sqlite3.register_adapter(pendulum.Date, lambda val: val.format("YYYY-MM-DD"))
+    sqlite3.register_adapter(
+        DateTime, lambda val: val.in_timezone("UTC").isoformat(" ")
+    )
+    sqlite3.register_adapter(Date, lambda val: val.format("YYYY-MM-DD"))
+
+
+def create_new_engine():
+    _register_pendulum_adapters()
+    return create_engine("sqlite:///networker.db")
+
+
+engine = create_new_engine()
 
 
 def db_seed_ports():

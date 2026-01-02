@@ -81,7 +81,6 @@ def get_router_mac() -> Optional[str]:
             router_mac = answered[0][1].hwsrc
             logger.debug(f"Router MAC address: {router_mac}")
         else:
-            logger.error("No router MAC address found")
             raise RouterMacNotFoundError("Unable to acquire router MAC address")
 
     return router_mac
