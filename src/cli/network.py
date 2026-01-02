@@ -6,7 +6,7 @@ from typer import Abort, Exit, Option, Typer
 
 from src.cli.console import console, display_port_info, echo
 from src.core.device import get_devices_on_network, get_open_ports
-from src.core.network import get_network, monitor_network
+from src.core.network import get_network, monitor_network, test_internet_connectivity
 from src.database.device_inference import db_infer_device_type
 from src.database.network import db_list_networks, db_update_network
 from src.logging_conf import set_log_level
@@ -143,4 +143,25 @@ def monitor(
             echo("  - 'icmp' (for ICMP packets)")
             echo("  - 'udp port 5353 or tcp port 80' (for multiple conditions)")
         logger.error(f"Error monitoring network: {e}")
+        raise Exit(code=1)
+
+
+@network_typer.command("test", help="Test internet connectivity")
+def test(
+    verbose: bool = Option(
+        False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
+    ),
+    save: bool = Option(
+        False,
+        "--save",
+        "-s",
+        help="Save the internet connectivity test results to the database",
+    ),
+):
+    if verbose:
+        set_log_level("DEBUG")
+    try:
+        test_internet_connectivity(save=save)
+    except Exception as e:
+        logger.error(f"Error testing internet connectivity: {e}")
         raise Exit(code=1)

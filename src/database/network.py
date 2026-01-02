@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 
 from src.database.db import engine
 from src.exceptions import NetworkNotFoundError
-from src.models.network import Network
+from src.models.network import Network, NetworkSpeedTest
 
 logger = structlog.getLogger(__name__)
 
@@ -84,3 +84,29 @@ def db_update_network(id: int, **kwargs: Any) -> Network:
             return existing
         else:
             raise NetworkNotFoundError(f"Network not found: {id}")
+
+
+def db_save_network_speed_test(
+    network_speed_test: NetworkSpeedTest,
+) -> NetworkSpeedTest:
+    logger.debug(f"Saving network speed test: {network_speed_test}")
+    with Session(engine) as session:
+        session.add(network_speed_test)
+        try:
+            session.commit()
+            session.refresh(network_speed_test)
+        except Exception:
+            session.rollback()
+            raise
+        return network_speed_test
+
+
+def db_get_latest_network_speed_test(network_id: int) -> Optional[NetworkSpeedTest]:
+    with Session(engine) as session:
+        return session.exec(
+            select(NetworkSpeedTest)
+            .where(
+                NetworkSpeedTest.network_id == network_id,
+            )
+            .order_by(NetworkSpeedTest.id.desc())
+        ).first()

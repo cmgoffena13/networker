@@ -1,5 +1,4 @@
 import ipaddress
-import platform
 import re
 import socket
 import struct
@@ -10,14 +9,20 @@ from typing import Optional
 import httpx
 import structlog
 from scapy.all import conf, get_if_addr, sniff
+from speedtest import Speedtest, SpeedtestException
 from typer import Abort, Exit
 
 from src.cli.console import echo
 from src.core.device import get_router_mac
 from src.core.packet import PacketHandler
-from src.database.network import db_get_network, db_save_network
+from src.database.network import (
+    db_get_latest_network_speed_test,
+    db_get_network,
+    db_save_network,
+    db_save_network_speed_test,
+)
 from src.exceptions import NetworkNotFoundError
-from src.models.network import Network
+from src.models.network import Network, NetworkSpeedTest
 
 logger = structlog.getLogger(__name__)
 
@@ -170,3 +175,56 @@ def monitor_network(filter: str = None, verbose: bool = False) -> None:
         raise Abort()
     except Exception:
         raise
+
+
+def convert_bytes_to_mbps(bytes: int) -> float:
+    return round(bytes / 1024 / 1024 * 8, 2)
+
+
+def test_internet_connectivity(save: bool = False) -> None:
+    logger.debug("Testing internet connectivity...")
+    try:
+        network = get_network()
+        st = Speedtest()
+        st.get_best_server()
+        echo("Measuring download speed...")
+        download_speed_bytes = st.download()
+        download_speed_mbps = convert_bytes_to_mbps(download_speed_bytes)
+        echo(f"Download speed: {download_speed_mbps} Mbps")
+        echo("Measuring upload speed...")
+        upload_speed_bytes = st.upload()
+        upload_speed_mbps = convert_bytes_to_mbps(upload_speed_bytes)
+        echo(f"Upload speed: {upload_speed_mbps} Mbps")
+        last_network_speed_test = db_get_latest_network_speed_test(network.id)
+        if save:
+            network_speed_test = NetworkSpeedTest(
+                network_id=network.id,
+                download_speed_mbps=download_speed_mbps,
+                upload_speed_mbps=upload_speed_mbps,
+            )
+            db_save_network_speed_test(network_speed_test)
+
+        if last_network_speed_test:
+            last_download = last_network_speed_test.download_speed_mbps
+            last_upload = last_network_speed_test.upload_speed_mbps
+
+            if download_speed_mbps > last_download:
+                increase = ((download_speed_mbps - last_download) / last_download) * 100
+                echo(f"Download speed has increased by {increase:.1f}%")
+            elif download_speed_mbps < last_download:
+                decrease = ((last_download - download_speed_mbps) / last_download) * 100
+                echo(f"Download speed has decreased by {decrease:.1f}%")
+
+            if upload_speed_mbps > last_upload:
+                increase = ((upload_speed_mbps - last_upload) / last_upload) * 100
+                echo(f"Upload speed has increased by {increase:.1f}%")
+            elif upload_speed_mbps < last_upload:
+                decrease = ((last_upload - upload_speed_mbps) / last_upload) * 100
+                echo(f"Upload speed has decreased by {decrease:.1f}%")
+
+    except SpeedtestException as e:
+        logger.error(f"Speedtest Exception: {e}")
+        raise Exit(code=1)
+    except Exception as e:
+        logger.error(f"Error testing internet connectivity: {e}")
+        raise Exit(code=1)

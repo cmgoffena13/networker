@@ -33,3 +33,19 @@ class Network(SQLModel, table=True):
     )
 
     __table_args__ = (Index("ux_router_mac", "router_mac", unique=True),)
+
+
+class NetworkSpeedTest(SQLModel, table=True):
+    __tablename__ = "network_speed_tests"
+
+    id: int | None = Field(default=None, primary_key=True, nullable=False)
+    network_id: int = Field(foreign_key="networks.id")
+    download_speed_mbps: float = Field(ge=0)
+    upload_speed_mbps: float = Field(ge=0)
+    created_at: DateTime = Field(
+        sa_column=Column(
+            DateTimeTZ(timezone=False),
+            nullable=False,
+            server_default=text("CURRENT_TIMESTAMP"),
+        ),
+    )
