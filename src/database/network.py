@@ -94,11 +94,9 @@ def db_save_network_speed_test(
         session.add(network_speed_test)
         try:
             session.commit()
-            session.refresh(network_speed_test)
         except Exception:
             session.rollback()
             raise
-        return network_speed_test
 
 
 def db_get_latest_network_speed_test(network_id: int) -> Optional[NetworkSpeedTest]:
