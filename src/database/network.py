@@ -12,7 +12,7 @@ logger = structlog.getLogger(__name__)
 
 
 def db_save_network(network: Network) -> Network:
-    logger.debug(f"Saving network: {network}")
+    logger.debug(f"Saving network to database: {network}")
     with Session(engine) as session:
         statement = select(Network).where(
             Network.router_mac == network.router_mac,
@@ -20,7 +20,7 @@ def db_save_network(network: Network) -> Network:
         existing = session.exec(statement).first()
 
         if existing:
-            logger.debug(f"Network already exists, updating...")
+            logger.debug(f"Network already exists in database, updating...")
             network_data = network.model_dump(
                 exclude_none=True,
                 exclude={"id", "network_name", "router_mac", "created_at"},
@@ -59,13 +59,13 @@ def db_get_network(network: Network) -> Optional[Network]:
 
 
 def db_list_networks() -> List[Network]:
-    logger.debug("Listing all networks...")
+    logger.debug("Listing all networks from database...")
     with Session(engine) as session:
         return session.exec(select(Network)).all()
 
 
 def db_update_network(id: int, **kwargs: Any) -> Network:
-    logger.debug(f"Updating network id: {id} with kwargs: {kwargs}")
+    logger.debug(f"Updating network id {id} in database with kwargs: {kwargs}")
     with Session(engine) as session:
         statement = select(Network).where(
             Network.id == id,
@@ -91,7 +91,7 @@ def db_update_network(id: int, **kwargs: Any) -> Network:
 def db_save_network_speed_test(
     network_speed_test: NetworkSpeedTest,
 ) -> NetworkSpeedTest:
-    logger.debug(f"Saving network speed test: {network_speed_test}")
+    logger.debug(f"Saving network speed test to database: {network_speed_test}")
     with Session(engine) as session:
         session.add(network_speed_test)
         try:
@@ -101,13 +101,21 @@ def db_save_network_speed_test(
             raise
 
 
-def db_get_latest_network_speed_test(network_id: int) -> Optional[NetworkSpeedTest]:
-    logger.debug(f"Getting latest network speed test for network id: {network_id}...")
+def db_get_latest_network_speed_test(
+    network_id: int, device_id: int
+) -> Optional[NetworkSpeedTest]:
+    logger.debug(
+        f"Getting latest network speed test from database for network id {network_id} and device id {device_id}..."
+    )
     with Session(engine) as session:
-        return session.exec(
-            select(NetworkSpeedTest)
+        network_speed_test_id = session.exec(
+            select(NetworkSpeedTest.id)
             .where(
                 NetworkSpeedTest.network_id == network_id,
+                NetworkSpeedTest.device_id == device_id,
             )
             .order_by(NetworkSpeedTest.id.desc())
+        ).first()
+        return session.exec(
+            select(NetworkSpeedTest).where(NetworkSpeedTest.id == network_speed_test_id)
         ).first()

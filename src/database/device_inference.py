@@ -43,7 +43,7 @@ def score_inference(
 def db_infer_device_type(
     device_ports: List[DevicePort], device_id: int, save: bool = False
 ) -> Tuple[Optional[str], Optional[float]]:
-    logger.debug(f"Inferring device type for device ID: {device_id}")
+    logger.debug(f"Inferring device type from database for device ID {device_id}")
     tcp_ports = {dp.port_number for dp in device_ports if dp.protocol == Protocol.TCP}
     udp_ports = {dp.port_number for dp in device_ports if dp.protocol == Protocol.UDP}
 
@@ -76,15 +76,15 @@ def db_infer_device_type(
                     updated_at=now(),
                 )
                 logger.debug(
-                    f"Updated device {device_id} with inference: {best_inference.inference} (match: {match_percentage:.2%}, score: {best_score:.2f})"
+                    f"Updated device {device_id} in database with inference: {best_inference.inference} (match: {match_percentage:.2%}, score: {best_score:.2f})"
                 )
             return (best_inference.inference, match_percentage)
 
-        logger.debug(f"No inferences found for device ID: {device_id}")
+        logger.debug(f"No inferences found in database for device ID {device_id}")
         return (None, None)
 
 
 def db_list_inferences() -> List[DeviceInference]:
-    logger.debug("Listing all inferences...")
+    logger.debug("Listing all inferences from database...")
     with Session(engine) as session:
         return session.exec(select(DeviceInference)).all()

@@ -13,7 +13,7 @@ logger = structlog.getLogger(__name__)
 
 
 def db_save_device(device: Device) -> Device:
-    logger.debug(f"Saving device: {device}")
+    logger.debug(f"Saving device to database: {device}")
     with Session(engine) as session:
         statement = select(Device).where(
             Device.network_id == device.network_id,
@@ -22,7 +22,7 @@ def db_save_device(device: Device) -> Device:
         existing = session.exec(statement).first()
 
         if existing:
-            logger.debug(f"Device already exists, updating...")
+            logger.debug(f"Device already exists in database, updating...")
             device_data = device.model_dump(
                 exclude_none=True,
                 exclude={
@@ -61,7 +61,7 @@ def db_save_device(device: Device) -> Device:
 
 
 def db_update_device(id: int, **kwargs: Any) -> Device:
-    logger.debug(f"Updating device id: {id} with kwargs: {kwargs}")
+    logger.debug(f"Updating device id {id} in database with kwargs: {kwargs}")
     with Session(engine) as session:
         statement = select(Device).where(
             Device.id == id,
@@ -85,20 +85,31 @@ def db_update_device(id: int, **kwargs: Any) -> Device:
 
 
 def db_list_devices() -> List[Device]:
-    logger.debug("Listing all devices...")
+    logger.debug("Listing all devices from database...")
     with Session(engine) as session:
         return session.exec(select(Device)).all()
 
 
+def db_get_current_device() -> Optional[Device]:
+    logger.debug("Getting current device from database...")
+    with Session(engine) as session:
+        current_device_id = session.exec(
+            select(Device.id).where(Device.current_device == True)
+        ).first()
+        return session.exec(
+            select(Device).where(Device.id == current_device_id)
+        ).first()
+
+
 def db_get_device(id: int) -> Device:
-    logger.debug(f"Getting device by id: {id}...")
+    logger.debug(f"Getting device from database by id: {id}...")
     with Session(engine) as session:
         return session.exec(select(Device).where(Device.id == id)).first()
 
 
 def db_get_device_by_mac_address(mac_address: str, network_id: int) -> Optional[Device]:
     logger.debug(
-        f"Getting device by mac address: {mac_address} and network id: {network_id}..."
+        f"Getting device from database by mac address {mac_address} and network id {network_id}..."
     )
     with Session(engine) as session:
         return session.exec(

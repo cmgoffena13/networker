@@ -16,6 +16,7 @@ from typer import Abort
 from src.cli.console import echo
 from src.core.device import get_router_mac
 from src.core.packet import PacketHandler
+from src.database.device import db_get_current_device
 from src.database.network import (
     db_get_latest_network_speed_test,
     db_get_network,
@@ -196,7 +197,7 @@ def convert_bytes_to_mbps(bytes: int) -> float:
 
 @retry()
 def speedtest_internet_connectivity() -> Tuple[float, float, float]:
-    echo("Testing internet speed from device...")
+    echo("Testing internet speed from current device...")
     st = Speedtest(secure=True)
     st.get_best_server()
     echo("Measuring download speed...")
@@ -215,15 +216,19 @@ def speedtest_internet_connectivity() -> Tuple[float, float, float]:
 def test_internet_connectivity(save: bool = False) -> None:
     try:
         network = get_network()
+        current_device = db_get_current_device()
         download_speed_mbps, upload_speed_mbps, ping_time_ms = (
             speedtest_internet_connectivity()
         )
         last_network_speed_test = None
-        if network.id:
-            last_network_speed_test = db_get_latest_network_speed_test(network.id)
+        if network.id and current_device.id:
+            last_network_speed_test = db_get_latest_network_speed_test(
+                network.id, current_device.id
+            )
         if save:
             network_speed_test = NetworkSpeedTest(
                 network_id=network.id,
+                device_id=current_device.id,
                 download_speed_mbps=download_speed_mbps,
                 upload_speed_mbps=upload_speed_mbps,
                 ping_time_ms=ping_time_ms,
@@ -232,11 +237,18 @@ def test_internet_connectivity(save: bool = False) -> None:
             echo("Network speed test saved to database.")
 
         if last_network_speed_test:
+            echo("\n")
             created_at = pendulum.instance(
                 last_network_speed_test.created_at
             ).in_timezone(pendulum.local_timezone())
+            days_ago = (pendulum.now() - created_at).days
+            days_ago_str = (
+                f"({days_ago} day{'s' if days_ago != 1 else ''} ago)"
+                if days_ago > 0
+                else "(today)"
+            )
             echo(
-                f"Last network speed test on {created_at.format('YYYY-MM-DD hh:mm:ss A')}"
+                f"Last network speed test for device {current_device.id} on {created_at.format('YYYY-MM-DD hh:mm:ss A')} {days_ago_str}"
             )
             last_ping_time = last_network_speed_test.ping_time_ms
             last_download = last_network_speed_test.download_speed_mbps

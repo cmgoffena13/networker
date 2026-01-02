@@ -36,4 +36,5 @@ class Device(SQLModel, table=True):
 
     __table_args__ = (
         Index("idx_network_id_mac_address", "network_id", "mac_address", unique=True),
+        Index("idx_current_device", "current_device", "id"),
     )

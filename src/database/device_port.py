@@ -11,7 +11,7 @@ logger = structlog.getLogger(__name__)
 
 
 def db_save_device_ports(device_ports: List[DevicePort], device_id: int):
-    logger.debug(f"Saving open device ports for device: {device_id}")
+    logger.debug(f"Saving open device ports to database for device {device_id}")
     with Session(engine) as session:
         savepoint = session.begin_nested()
         try:
@@ -29,7 +29,7 @@ def db_save_device_ports(device_ports: List[DevicePort], device_id: int):
 def db_list_device_ports(
     device_id: int,
 ) -> List[Tuple[DevicePort, Optional[str], Optional[str]]]:
-    logger.debug(f"Listing open device ports for device: {device_id}")
+    logger.debug(f"Listing open device ports from database for device {device_id}")
     with Session(engine) as session:
         return session.exec(
             select(DevicePort, Port.service_name, Port.description)

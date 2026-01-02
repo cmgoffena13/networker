@@ -40,6 +40,7 @@ class NetworkSpeedTest(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True, nullable=False)
     network_id: int = Field(foreign_key="networks.id")
+    device_id: int = Field(foreign_key="devices.id")
     download_speed_mbps: float = Field(ge=0)
     upload_speed_mbps: float = Field(ge=0)
     ping_time_ms: float = Field(ge=0)
@@ -49,4 +50,8 @@ class NetworkSpeedTest(SQLModel, table=True):
             nullable=False,
             server_default=text("CURRENT_TIMESTAMP"),
         ),
+    )
+
+    __table_args__ = (
+        Index("idx_network_id_device_id_id", "network_id", "device_id", "id"),
     )
