@@ -16,7 +16,6 @@ def db_save_network(network: Network) -> Network:
     with Session(engine) as session:
         statement = select(Network).where(
             Network.router_mac == network.router_mac,
-            Network.public_ip == network.public_ip,
         )
         existing = session.exec(statement).first()
 
@@ -24,7 +23,7 @@ def db_save_network(network: Network) -> Network:
             logger.debug(f"Network already exists, updating...")
             network_data = network.model_dump(
                 exclude_none=True,
-                exclude={"id", "network_name", "router_mac", "public_ip", "created_at"},
+                exclude={"id", "network_name", "router_mac", "created_at"},
             )
             for key, value in network_data.items():
                 if hasattr(existing, key):
@@ -54,7 +53,6 @@ def db_get_network(network: Network) -> Optional[Network]:
         return session.exec(
             select(Network).where(
                 Network.router_mac == network.router_mac,
-                Network.public_ip == network.public_ip,
             )
         ).first()
 
