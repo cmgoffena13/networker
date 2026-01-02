@@ -118,11 +118,14 @@ def monitor(
     verbose: bool = Option(
         False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
     ),
+    exclude_host: bool = Option(
+        False, "--exclude-host", "-e", help="Exclude the host from the network traffic"
+    ),
 ):
     if verbose:
         set_log_level("DEBUG")
     try:
-        monitor_network(filter=filter, verbose=verbose)
+        monitor_network(filter=filter, verbose=verbose, exclude_host=exclude_host)
     except Exception as e:
         error_msg = str(e).lower()
         if "cannot set filter" in error_msg:
@@ -155,7 +158,6 @@ def test(
     if verbose:
         set_log_level("DEBUG")
     try:
-        echo("Testing network internet speed from device...")
         test_internet_connectivity(save=save)
     except Exception as e:
         logger.error(f"Error testing internet connectivity: {e}")

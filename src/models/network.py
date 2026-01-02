@@ -42,6 +42,7 @@ class NetworkSpeedTest(SQLModel, table=True):
     network_id: int = Field(foreign_key="networks.id")
     download_speed_mbps: float = Field(ge=0)
     upload_speed_mbps: float = Field(ge=0)
+    ping_time_ms: float = Field(ge=0)
     created_at: DateTime = Field(
         sa_column=Column(
             DateTimeTZ(timezone=False),

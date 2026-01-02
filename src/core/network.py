@@ -161,11 +161,20 @@ def get_network(save: bool = False) -> Optional[Network]:
     return network
 
 
-def monitor_network(filter: str = None, verbose: bool = False) -> None:
+def monitor_network(
+    filter: str = None, verbose: bool = False, exclude_host: bool = False
+) -> None:
     logger.debug("Monitoring network...")
     echo("Starting network monitoring (press Ctrl+C to stop)...")
 
-    packet_handler = PacketHandler(verbose=verbose)
+    packet_handler = PacketHandler(verbose=verbose, exclude_host=exclude_host)
+
+    if exclude_host and packet_handler.host_ip:
+        host_filter = f"not host {packet_handler.host_ip}"
+        if filter:
+            filter = f"{filter} and {host_filter}"
+        else:
+            filter = host_filter
 
     try:
         sniff(
@@ -186,7 +195,7 @@ def convert_bytes_to_mbps(bytes: int) -> float:
 
 
 @retry()
-def speedtest_internet_connectivity() -> Tuple[float, float]:
+def speedtest_internet_connectivity() -> Tuple[float, float, float]:
     echo("Testing internet speed from device...")
     st = Speedtest(secure=True)
     st.get_best_server()
@@ -198,13 +207,17 @@ def speedtest_internet_connectivity() -> Tuple[float, float]:
     upload_speed_bytes = st.upload()
     upload_speed_mbps = convert_bytes_to_mbps(upload_speed_bytes)
     echo(f"Upload speed: {upload_speed_mbps} Mbps")
-    return download_speed_mbps, upload_speed_mbps
+    ping_time_ms = st.results.ping
+    echo(f"Ping time: {ping_time_ms} ms")
+    return download_speed_mbps, upload_speed_mbps, ping_time_ms
 
 
 def test_internet_connectivity(save: bool = False) -> None:
     try:
         network = get_network()
-        download_speed_mbps, upload_speed_mbps = speedtest_internet_connectivity()
+        download_speed_mbps, upload_speed_mbps, ping_time_ms = (
+            speedtest_internet_connectivity()
+        )
         last_network_speed_test = None
         if network.id:
             last_network_speed_test = db_get_latest_network_speed_test(network.id)
@@ -213,6 +226,7 @@ def test_internet_connectivity(save: bool = False) -> None:
                 network_id=network.id,
                 download_speed_mbps=download_speed_mbps,
                 upload_speed_mbps=upload_speed_mbps,
+                ping_time_ms=ping_time_ms,
             )
             db_save_network_speed_test(network_speed_test)
             echo("Network speed test saved to database.")
@@ -224,6 +238,7 @@ def test_internet_connectivity(save: bool = False) -> None:
             echo(
                 f"Last network speed test on {created_at.format('YYYY-MM-DD hh:mm:ss A')}"
             )
+            last_ping_time = last_network_speed_test.ping_time_ms
             last_download = last_network_speed_test.download_speed_mbps
             last_upload = last_network_speed_test.upload_speed_mbps
 
@@ -251,6 +266,19 @@ def test_internet_connectivity(save: bool = False) -> None:
                 echo(
                     f"Upload speed has decreased by {decrease:.1f}% "
                     f"(from {last_upload} Mbps to {upload_speed_mbps} Mbps)"
+                )
+
+            if ping_time_ms > last_ping_time:
+                increase = ((ping_time_ms - last_ping_time) / last_ping_time) * 100
+                echo(
+                    f"Ping time has increased by {increase:.1f}% "
+                    f"(from {last_ping_time} ms to {ping_time_ms} ms)"
+                )
+            elif ping_time_ms < last_ping_time:
+                decrease = ((last_ping_time - ping_time_ms) / last_ping_time) * 100
+                echo(
+                    f"Ping time has decreased by {decrease:.1f}% "
+                    f"(from {last_ping_time} ms to {ping_time_ms} ms)"
                 )
 
     except SpeedtestException as e:
