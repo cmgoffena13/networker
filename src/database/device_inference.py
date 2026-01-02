@@ -85,5 +85,6 @@ def db_infer_device_type(
 
 
 def db_list_inferences() -> List[DeviceInference]:
+    logger.debug("Listing all inferences...")
     with Session(engine) as session:
         return session.exec(select(DeviceInference)).all()

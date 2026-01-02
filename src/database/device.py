@@ -85,16 +85,21 @@ def db_update_device(id: int, **kwargs: Any) -> Device:
 
 
 def db_list_devices() -> List[Device]:
+    logger.debug("Listing all devices...")
     with Session(engine) as session:
         return session.exec(select(Device)).all()
 
 
 def db_get_device(id: int) -> Device:
+    logger.debug(f"Getting device by id: {id}...")
     with Session(engine) as session:
         return session.exec(select(Device).where(Device.id == id)).first()
 
 
 def db_get_device_by_mac_address(mac_address: str, network_id: int) -> Optional[Device]:
+    logger.debug(
+        f"Getting device by mac address: {mac_address} and network id: {network_id}..."
+    )
     with Session(engine) as session:
         return session.exec(
             select(Device).where(

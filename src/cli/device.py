@@ -33,7 +33,6 @@ def scan(
         set_log_level("DEBUG")
     try:
         device = db_get_device(device_id)
-        echo(f"Scanning device {device.id} for open ports...")
         echo("\nPress Ctrl+C to interrupt scanning and exit...")
         scan_device_for_open_ports(device, save=save)
     except Abort:

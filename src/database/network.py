@@ -49,6 +49,7 @@ def db_save_network(network: Network) -> Network:
 
 
 def db_get_network(network: Network) -> Optional[Network]:
+    logger.debug("Getting network from database...")
     with Session(engine) as session:
         return session.exec(
             select(Network).where(
@@ -58,6 +59,7 @@ def db_get_network(network: Network) -> Optional[Network]:
 
 
 def db_list_networks() -> List[Network]:
+    logger.debug("Listing all networks...")
     with Session(engine) as session:
         return session.exec(select(Network)).all()
 
@@ -100,6 +102,7 @@ def db_save_network_speed_test(
 
 
 def db_get_latest_network_speed_test(network_id: int) -> Optional[NetworkSpeedTest]:
+    logger.debug(f"Getting latest network speed test for network id: {network_id}...")
     with Session(engine) as session:
         return session.exec(
             select(NetworkSpeedTest)
