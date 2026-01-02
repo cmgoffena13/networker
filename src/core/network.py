@@ -232,7 +232,9 @@ def monitor_network(
     if filter:
         filter_parts.append(filter)
     if exclude_host:
-        filter_parts.append(f"not host {packet_handler.host_ip}")
+        current_device = db_get_current_device()
+        if current_device and current_device.ip_address:
+            filter_parts.append(f"not host {current_device.ip_address}")
     if dns:
         filter_parts.append("(port 53 or port 5353)")
     final_filter = " and ".join(filter_parts) if filter_parts else None

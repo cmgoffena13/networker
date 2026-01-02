@@ -29,12 +29,6 @@ class PacketHandler:
         self.verbose = verbose
         self.exclude_host = exclude_host
         self.devices = db_list_devices()
-        self.host_ip = None
-        if self.exclude_host:
-            for device in self.devices:
-                if device.current_device:
-                    self.host_ip = device.ip_address
-                    break
         self.local_ips = {device.ip_address for device in self.devices}
         self.local_mac_addresses_mapping = {
             device.mac_address: device.ip_address for device in self.devices
