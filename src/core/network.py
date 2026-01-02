@@ -164,10 +164,6 @@ def get_network(save: bool = False) -> Optional[Network]:
     return network
 
 
-def get_available_interfaces() -> list[str]:
-    return get_if_list()
-
-
 def get_active_interfaces() -> list[str]:
     active_ifaces = []
 
@@ -206,7 +202,7 @@ def monitor_network(
     echo("Detecting active network interfaces...")
     interfaces = get_active_interfaces()
     if not interfaces:
-        interfaces = get_available_interfaces()
+        interfaces = get_if_list()
         if not interfaces:
             echo("No network interfaces found")
             raise Exception("No network interfaces available")
