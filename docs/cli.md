@@ -136,6 +136,7 @@ $ networker network monitor [OPTIONS]
 
 * `-f, --filter TEXT`: Filter network traffic
 * `-v, --verbose`: Enable verbose (DEBUG) logging
+* `-e, --exclude-host`: Exclude the host from the network traffic
 * `--help`: Show this message and exit.
 
 ### `networker network test`
