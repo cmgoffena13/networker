@@ -57,6 +57,7 @@ $ networker network [OPTIONS] COMMAND [ARGS]...
 * `list`: List information on networks stored
 * `update`: Update the network information
 * `monitor`: Monitor network traffic
+* `test`: Test internet connectivity
 
 ### `networker network init`
 
@@ -135,6 +136,22 @@ $ networker network monitor [OPTIONS]
 
 * `-f, --filter TEXT`: Filter network traffic
 * `-v, --verbose`: Enable verbose (DEBUG) logging
+* `--help`: Show this message and exit.
+
+### `networker network test`
+
+Test internet connectivity
+
+**Usage**:
+
+```console
+$ networker network test [OPTIONS]
+```
+
+**Options**:
+
+* `-v, --verbose`: Enable verbose (DEBUG) logging
+* `-s, --save`: Save the internet connectivity test results to the database
 * `--help`: Show this message and exit.
 
 ## `networker device`
