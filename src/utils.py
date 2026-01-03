@@ -1,3 +1,4 @@
+import shutil
 import time
 from functools import wraps
 from typing import Optional
@@ -31,3 +32,21 @@ def retry(attempts: int = 3, delay: float = 0.25, backoff: float = 2.0):
 
 def lower_string(value: Optional[str]) -> Optional[str]:
     return value.lower() if value else None
+
+
+def find_command(cmd: str, default_paths: list[str] = None) -> str:
+    """Find the full path to a system command.
+
+    Tries shutil.which() first, then falls back to default_paths if provided.
+    This is useful for frozen/compiled executables where PATH may not be set correctly.
+    """
+    path = shutil.which(cmd)
+    if path:
+        return path
+
+    if default_paths:
+        for default_path in default_paths:
+            if shutil.which(default_path):
+                return default_path
+
+    return cmd

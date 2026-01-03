@@ -167,17 +167,6 @@ def db_seed_device_inferences(engine: Engine):
             raise
 
 
-def init_db(reset: bool = False):
-    logger.debug("Initializing database...")
-    if reset:
-        logger.debug("Dropping all tables...")
-        SQLModel.metadata.drop_all(engine)
-    SQLModel.metadata.create_all(engine)
-    db_seed_ports(engine=engine)
-    db_seed_device_inferences(engine=engine)
-    logger.debug("Database initialized")
-
-
 def create_base_db():
     data_dir = Path(__file__).parent.parent / "data"
     base_engine = create_engine(f"sqlite:///{data_dir}/networker_base.db")

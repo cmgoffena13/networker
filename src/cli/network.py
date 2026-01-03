@@ -1,4 +1,7 @@
 import json
+import shutil
+import sys
+from pathlib import Path
 from typing import Optional
 
 import structlog
@@ -7,7 +10,7 @@ from typer import Abort, Exit, Option, Typer, confirm
 from src.cli.console import console, echo
 from src.core.device import get_devices_on_network, scan_device_for_open_ports
 from src.core.network import get_network, monitor_network, test_internet_connectivity
-from src.database.db import init_db
+from src.database.db import get_db_path
 from src.database.network import (
     db_delete_network,
     db_get_network_by_id,
@@ -39,7 +42,14 @@ def register_base_network_commands(app: Typer) -> None:
             raise Abort()
 
         echo("Resetting database...")
-        init_db(reset=True)
+        user_db_path = get_db_path()
+        if getattr(sys, "frozen", False):
+            base_path = Path(sys._MEIPASS)
+        else:
+            base_path = Path(__file__).parent.parent
+        schema_db = base_path / "data" / "networker_base.db"
+        user_db_path.unlink(missing_ok=True)
+        shutil.copy2(schema_db, user_db_path)
         echo("Database reset and seeded lookup data")
 
     @app.command("scan", help="Scan the network for devices")

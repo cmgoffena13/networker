@@ -28,7 +28,7 @@ from src.database.network import (
 )
 from src.exceptions import NetworkNotFoundError
 from src.models.network import Network, NetworkSpeedTest
-from src.utils import retry
+from src.utils import find_command, retry
 
 logger = structlog.getLogger(__name__)
 
@@ -38,32 +38,36 @@ def get_wifi_network_name() -> Optional[str]:
     logger.debug("Getting WiFi network name...")
     ssid = None
     if sys.platform == "darwin":  # macOS
+        system_profiler = find_command("system_profiler", ["/usr/sbin/system_profiler"])
+        awk = find_command("awk", ["/usr/bin/awk"])
         profiler = subprocess.Popen(
-            ["system_profiler", "SPAirPortDataType"],
+            [system_profiler, "SPAirPortDataType"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        awk = subprocess.Popen(
-            ["awk", '/Current Network/ {getline; $1=$1; gsub(":", ""); print; exit}'],
+        awk_proc = subprocess.Popen(
+            [awk, '/Current Network/ {getline; $1=$1; gsub(":", ""); print; exit}'],
             stdin=profiler.stdout,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
         )
         profiler.stdout.close()
-        stdout, stderr = awk.communicate(timeout=10)
+        stdout, stderr = awk_proc.communicate(timeout=10)
         profiler.wait(timeout=10)
-        if awk.returncode == 0 and stdout.strip():
+        if awk_proc.returncode == 0 and stdout.strip():
             ssid = stdout.strip()
     elif sys.platform.startswith("linux"):
+        iwgetid = find_command("iwgetid", ["/usr/sbin/iwgetid", "/sbin/iwgetid"])
         result = subprocess.run(
-            ["iwgetid", "-r"], capture_output=True, text=True, timeout=5
+            [iwgetid, "-r"], capture_output=True, text=True, timeout=5
         )
         if result.returncode == 0:
             ssid = result.stdout.strip()
     elif sys.platform == "win32":  # Windows
+        netsh = find_command("netsh", [r"C:\Windows\System32\netsh.exe"])
         result = subprocess.run(
-            ["netsh", "wlan", "show", "interfaces"],
+            [netsh, "wlan", "show", "interfaces"],
             capture_output=True,
             text=True,
             timeout=5,
@@ -81,7 +85,8 @@ def get_netmask() -> Optional[str]:
     netmask = None
     interface_name = str(conf.iface)
     if sys.platform == "win32":
-        result = subprocess.run(["ipconfig"], capture_output=True, text=True, timeout=5)
+        ipconfig = find_command("ipconfig", [r"C:\Windows\System32\ipconfig.exe"])
+        result = subprocess.run([ipconfig], capture_output=True, text=True, timeout=5)
         if result.returncode == 0:
             # Find the interface section and extract subnet mask
             # Format: Subnet Mask . . . . . . . . . . . : 255.255.255.0
@@ -90,9 +95,14 @@ def get_netmask() -> Optional[str]:
             if match:
                 netmask = match.group(1)
     else:
-        ifconfig_path = "/sbin/ifconfig" if sys.platform == "darwin" else "ifconfig"
+        if sys.platform == "darwin":
+            ifconfig = find_command("ifconfig", ["/sbin/ifconfig"])
+        else:
+            ifconfig = find_command(
+                "ifconfig", ["/sbin/ifconfig", "/usr/sbin/ifconfig"]
+            )
         result = subprocess.run(
-            [ifconfig_path, interface_name], capture_output=True, text=True, timeout=5
+            [ifconfig, interface_name], capture_output=True, text=True, timeout=5
         )
         if result.returncode == 0:
             # Look for netmask (format: netmask 0xffffff00 or netmask 255.255.255.0)
