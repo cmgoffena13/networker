@@ -11,8 +11,7 @@ A simple CLI to monitor a local area network (LAN).
 ## Getting Started
 
 1. Navigate to the repo  
-2. Utilize the `./networker init` command to initialize the sqlite database  
-3. Utilize the `./networker scan -s` command to log your network and device information  
+2. Utilize the `./networker scan -s` command to scan your network and log the results
 
 ## Naming Your Devices
 
@@ -26,7 +25,7 @@ Use the information to determine what the devices actually are, and then you can
 ./networker device update --id 1 --data '{"device_name": "my device!"}'
 ```
 
-Once the device names are updated, any future scans will show the device names in the output as well!
+Once the device names are updated, any future commands will show the device names in the output as well!
 
 ## Device Inferences
 

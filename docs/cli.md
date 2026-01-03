@@ -16,18 +16,18 @@ $ networker [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
-* `reset`: Reset the database by dropping all tables...
+* `reset`: Reset the database.
 * `scan`: Scan the network for devices
 * `list`: List information on networks stored
 * `update`: Update the network information
-* `monitor`: Monitor network traffic
+* `monitor`: Monitor network traffic.
 * `test`: Test internet connectivity
 * `device`: Device commands
 * `inference`: Inference commands
 
 ## `networker reset`
 
-Reset the database by dropping all tables and recreating them
+Reset the database. Deletes information.
 
 **Usage**:
 
@@ -91,7 +91,7 @@ $ networker update [OPTIONS]
 
 ## `networker monitor`
 
-Monitor network traffic
+Monitor network traffic. Ex &#x27;tcp port 80&#x27;
 
 **Usage**:
 

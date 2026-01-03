@@ -114,7 +114,7 @@ def register_base_network_commands(app: Typer) -> None:
             logger.error(f"Error updating network: {e}")
             raise Exit(code=1)
 
-    @app.command("monitor", help="Monitor network traffic")
+    @app.command("monitor", help="Monitor network traffic. Ex 'tcp port 80' ")
     def monitor(
         filter: Optional[str] = Option(
             None, "--filter", "-f", help="Filter network traffic", callback=lower_string
