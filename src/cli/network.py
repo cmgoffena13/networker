@@ -26,32 +26,6 @@ logger = structlog.getLogger(__name__)
 def register_base_network_commands(app: Typer) -> None:
     """Register network commands directly on the main app"""
 
-    @app.command("reset", help="Reset the database. Deletes information.")
-    def reset(
-        verbose: bool = Option(
-            False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
-        ),
-    ):
-        if verbose:
-            set_log_level("DEBUG")
-
-        echo("Warning: This operation will DROP ALL EXISTING TABLES and recreate them.")
-        echo("All existing data will be lost!")
-        if not confirm("Are you sure you want to continue?", default=False):
-            echo("Database reset cancelled.")
-            raise Abort()
-
-        echo("Resetting database...")
-        user_db_path = get_db_path()
-        if getattr(sys, "frozen", False):
-            base_path = Path(sys._MEIPASS)
-        else:
-            base_path = Path(__file__).parent.parent
-        schema_db = base_path / "data" / "networker_base.db"
-        user_db_path.unlink(missing_ok=True)
-        shutil.copy2(schema_db, user_db_path)
-        echo("Database reset and seeded lookup data")
-
     @app.command("scan", help="Scan the network for devices")
     def scan(
         verbose: bool = Option(
@@ -218,3 +192,29 @@ def register_base_network_commands(app: Typer) -> None:
         except Exception as e:
             logger.error(f"Error deleting network: {e}")
             raise Exit(code=1)
+
+    @app.command("reset", help="Reset the database. Deletes information.")
+    def reset(
+        verbose: bool = Option(
+            False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
+        ),
+    ):
+        if verbose:
+            set_log_level("DEBUG")
+
+        echo("Warning: This operation will DROP ALL EXISTING TABLES and recreate them.")
+        echo("All existing data will be lost!")
+        if not confirm("Are you sure you want to continue?", default=False):
+            echo("Database reset cancelled.")
+            raise Abort()
+
+        echo("Resetting database...")
+        user_db_path = get_db_path()
+        if getattr(sys, "frozen", False):
+            base_path = Path(sys._MEIPASS)
+        else:
+            base_path = Path(__file__).parent.parent
+        schema_db = base_path / "data" / "networker_base.db"
+        user_db_path.unlink(missing_ok=True)
+        shutil.copy2(schema_db, user_db_path)
+        echo("Database reset and seeded lookup data")
