@@ -25,5 +25,5 @@ def list(
         for inference in inferences:
             echo(f"Inference: {inference.model_dump_json(indent=2)}")
     except Exception as e:
-        logger.error(f"Error listing inferences: {e}")
+        logger.exception(f"Error listing inferences: {e}")
         raise Exit(code=1)

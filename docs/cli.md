@@ -16,30 +16,15 @@ $ networker [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
-* `reset`: Reset the database.
 * `scan`: Scan the network for devices
 * `list`: List information on networks stored
 * `update`: Update the network information
 * `monitor`: Monitor network traffic.
 * `test`: Test internet connectivity
 * `delete`: Delete a network and all associated data
+* `reset`: Reset the database.
 * `device`: Device commands
 * `inference`: Inference commands
-
-## `networker reset`
-
-Reset the database. Deletes information.
-
-**Usage**:
-
-```console
-$ networker reset [OPTIONS]
-```
-
-**Options**:
-
-* `-v, --verbose`: Enable verbose (DEBUG) logging
-* `--help`: Show this message and exit.
 
 ## `networker scan`
 
@@ -136,6 +121,21 @@ $ networker delete [OPTIONS]
 **Options**:
 
 * `-i, --id INTEGER`: Network ID to delete  [required]
+* `-v, --verbose`: Enable verbose (DEBUG) logging
+* `--help`: Show this message and exit.
+
+## `networker reset`
+
+Reset the database. Deletes information.
+
+**Usage**:
+
+```console
+$ networker reset [OPTIONS]
+```
+
+**Options**:
+
 * `-v, --verbose`: Enable verbose (DEBUG) logging
 * `--help`: Show this message and exit.
 

@@ -368,12 +368,13 @@ def test_internet_connectivity(trace: bool = False) -> None:
             upload_speed_mbps=upload_speed_mbps,
             ping_time_ms=ping_time_ms,
         )
-        db_save_network_speed_test(network_speed_test)
-        logger.debug("Network speed test saved to database.")
 
         last_network_speed_test = db_get_latest_network_speed_test(
             network.id, current_device.id
         )
+
+        db_save_network_speed_test(network_speed_test)
+        logger.debug("Network speed test saved to database.")
         if last_network_speed_test:
             echo("\n")
             created_at = pendulum.instance(

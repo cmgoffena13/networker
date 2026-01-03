@@ -40,7 +40,7 @@ def scan(
     except Abort:
         raise
     except Exception as e:
-        logger.error(f"Error scanning device: {e}")
+        logger.exception(f"Error scanning device: {e}")
         raise Exit(code=1)
 
 
@@ -59,7 +59,7 @@ def list(
             device_ports = db_list_device_ports(device.id)
             echo(format_device_with_ports_json(device, device_ports))
     except Exception as e:
-        logger.error(f"Error listing devices: {e}")
+        logger.exception(f"Error listing devices: {e}")
         raise Exit(code=1)
 
 
@@ -93,7 +93,7 @@ def update(
         echo(f"Device {device_id} updated successfully")
         echo(f"Updated device: {updated_device.model_dump_json(indent=2)}")
     except Exception as e:
-        logger.error(f"Error updating device: {e}")
+        logger.exception(f"Error updating device: {e}")
         raise Exit(code=1)
 
 
@@ -125,5 +125,5 @@ def delete(
     except Abort:
         raise
     except Exception as e:
-        logger.error(f"Error deleting device: {e}")
+        logger.exception(f"Error deleting device: {e}")
         raise Exit(code=1)

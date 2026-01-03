@@ -56,7 +56,6 @@ def create_new_engine():
     _register_pendulum_adapters()
     db_path = get_db_path()
     db_url = f"sqlite:///{db_path}"
-    logger.debug(f"Creating engine with URL: {db_url}")
     return create_engine(db_url)
 
 

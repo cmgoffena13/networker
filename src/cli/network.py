@@ -47,7 +47,7 @@ def register_base_network_commands(app: Typer) -> None:
         except Abort:
             raise
         except Exception as e:
-            logger.error(f"Error scanning network: {e}")
+            logger.exception(f"Error scanning network: {e}")
             raise Exit(code=1)
 
     @app.command("list", help="List information on networks stored")
@@ -64,7 +64,7 @@ def register_base_network_commands(app: Typer) -> None:
             for network in networks:
                 echo(f"Network: {network.model_dump_json(indent=2)}")
         except Exception as e:
-            logger.error(f"Error listing networks: {e}")
+            logger.exception(f"Error listing networks: {e}")
             raise Exit(code=1)
 
     @app.command("update", help="Update the network information")
@@ -97,7 +97,7 @@ def register_base_network_commands(app: Typer) -> None:
             echo(f"Network {network_id} updated successfully")
             echo(f"Updated network: {updated_network.model_dump_json(indent=2)}")
         except Exception as e:
-            logger.error(f"Error updating network: {e}")
+            logger.exception(f"Error updating network: {e}")
             raise Exit(code=1)
 
     @app.command("monitor", help="Monitor network traffic.")
@@ -139,7 +139,7 @@ def register_base_network_commands(app: Typer) -> None:
                 echo("  - 'arp' (for ARP packets)")
                 echo("  - 'icmp' (for ICMP packets)")
                 echo("  - 'udp port 5353 or tcp port 80' (for multiple conditions)")
-            logger.error(f"Error monitoring network: {e}")
+            logger.exception(f"Error monitoring network: {e}")
             raise Exit(code=1)
 
     @app.command("test", help="Test internet connectivity")
@@ -156,7 +156,7 @@ def register_base_network_commands(app: Typer) -> None:
         try:
             test_internet_connectivity(trace=trace)
         except Exception as e:
-            logger.error(f"Error testing internet connectivity: {e}")
+            logger.exception(f"Error testing internet connectivity: {e}")
             raise Exit(code=1)
 
     @app.command("delete", help="Delete a network and all associated data")
@@ -190,7 +190,7 @@ def register_base_network_commands(app: Typer) -> None:
         except Abort:
             raise
         except Exception as e:
-            logger.error(f"Error deleting network: {e}")
+            logger.exception(f"Error deleting network: {e}")
             raise Exit(code=1)
 
     @app.command("reset", help="Reset the database. Deletes information.")

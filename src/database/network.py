@@ -3,8 +3,7 @@ from typing import Any, List, Optional
 
 import structlog
 from pendulum import now
-from sqlalchemy import func
-from sqlmodel import Session, delete, select
+from sqlmodel import Session, delete, func, select
 
 from src.cli.console import echo
 from src.database.db import engine
@@ -149,6 +148,8 @@ def db_save_network_speed_test(
     network_speed_test: NetworkSpeedTest,
 ) -> None:
     logger.debug(f"Saving network speed test to database: {network_speed_test}")
+    network_id = network_speed_test.network_id
+    device_id = network_speed_test.device_id
     with Session(engine) as session:
         session.add(network_speed_test)
         try:
@@ -158,9 +159,7 @@ def db_save_network_speed_test(
             session.rollback()
             raise
 
-    _cleanup_network_speed_tests(
-        network_speed_test.network_id, network_speed_test.device_id
-    )
+    _cleanup_network_speed_tests(network_id, device_id)
 
 
 def db_get_latest_network_speed_test(
