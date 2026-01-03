@@ -46,8 +46,9 @@ def main() -> None:
             echo(
                 "Please run with [bold]sudo networker <command>[/bold]",
             )
+        return
 
-    setup_logging(log_level="ERROR")
+    setup_logging()
     root_logger = logging.getLogger("src")
     for handler in root_logger.handlers:
         if isinstance(handler, RichHandler):

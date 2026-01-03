@@ -1,9 +1,13 @@
+import os
 from functools import lru_cache
 from typing import Literal, Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+
+os.environ["ENV_STATE"] = "prod"
 
 
 class BaseConfig(BaseSettings):

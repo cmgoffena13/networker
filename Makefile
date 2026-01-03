@@ -33,3 +33,7 @@ create-base-db:
 
 update-inferences:
 	uv run -- python -m src.database.db update_inferences
+
+copy-cli:
+	sudo cp dist/networker /usr/local/bin/networker
+	sudo chmod +x /usr/local/bin/networker
