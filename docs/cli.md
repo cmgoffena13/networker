@@ -122,6 +122,7 @@ $ networker test [OPTIONS]
 
 * `-v, --verbose`: Enable verbose (DEBUG) logging
 * `-s, --save`: Save the internet connectivity test results to the database
+* `-t, --trace`: Trace the internet connectivity test
 * `--help`: Show this message and exit.
 
 ## `networker delete`

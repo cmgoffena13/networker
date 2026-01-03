@@ -168,11 +168,14 @@ def register_base_network_commands(app: Typer) -> None:
             "-s",
             help="Save the internet connectivity test results to the database",
         ),
+        trace: bool = Option(
+            False, "--trace", "-t", help="Trace the internet connectivity test"
+        ),
     ):
         if verbose:
             set_log_level("DEBUG")
         try:
-            test_internet_connectivity(save=save)
+            test_internet_connectivity(save=save, trace=trace)
         except Exception as e:
             logger.error(f"Error testing internet connectivity: {e}")
             raise Exit(code=1)

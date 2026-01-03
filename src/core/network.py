@@ -1,9 +1,11 @@
 import ipaddress
 import re
 import socket
+import statistics
 import struct
 import subprocess
 import sys
+import time
 from threading import Thread
 from typing import Optional, Tuple
 
@@ -11,7 +13,7 @@ import httpx
 import pendulum
 import structlog
 from rich.prompt import Prompt
-from scapy.all import conf, get_if_addr, get_if_list, sniff
+from scapy.all import IP, TCP, UDP, conf, get_if_addr, get_if_list, sniff, sr1
 from speedtest import Speedtest, SpeedtestException
 from typer import Abort
 
@@ -262,12 +264,80 @@ def convert_bytes_to_mbps(bytes: int) -> float:
     return round(bytes / 1024 / 1024 * 8, 2)
 
 
+def _format_avg_rtt(avg_rtt: float) -> str:
+    return_value = f"{avg_rtt:.1f}ms"
+    if avg_rtt > 100:
+        return_value = f"[red]{avg_rtt:.1f}ms[/red]"
+    return return_value
+
+
+def _traceroute(target_host: str) -> int:
+    hostname = target_host.split(":")[0]
+    target_ip = socket.gethostbyname(hostname)
+    echo(f"Tracing route to: {target_ip} ({hostname})")
+
+    max_hops = 30
+    probes = 3
+    hops = 0
+
+    for ttl in range(1, max_hops + 1):
+        hop_rtts = []
+        responses = 0
+        last_src = None
+
+        for _ in range(probes):
+            pkt = IP(dst=target_ip, ttl=ttl) / TCP(dport=80, flags="S")
+            t_start = time.time()
+            reply = sr1(pkt, verbose=0, timeout=2)
+            rtt = (time.time() - t_start) * 1000
+
+            if reply:
+                responses += 1
+                hop_rtts.append(rtt)
+                last_src = str(reply.src)
+                hops = ttl
+
+                if str(reply.src) == target_ip:
+                    loss_pct = ((probes - responses) / probes) * 100
+                    if hop_rtts and any(rtt for rtt in hop_rtts if rtt is not None):
+                        avg_rtt = statistics.mean(
+                            [rtt for rtt in hop_rtts if rtt is not None]
+                        )
+                        formatted_avg = _format_avg_rtt(avg_rtt)
+                        echo(
+                            f"  {ttl:2d}: {last_src}  Loss: {loss_pct:.0f}%  Avg: {formatted_avg} (target reached)"
+                        )
+                    else:
+                        echo(f"  {ttl:2d}: {last_src}  (target reached)")
+                    return ttl
+            else:
+                hop_rtts.append(None)
+
+        loss_pct = ((probes - responses) / probes) * 100
+
+        if hop_rtts and any(rtt for rtt in hop_rtts if rtt is not None):
+            avg_rtt = statistics.mean([rtt for rtt in hop_rtts if rtt is not None])
+            formatted_avg = _format_avg_rtt(avg_rtt)
+            echo(f"  {ttl:2d}: {last_src}  Loss: {loss_pct:.0f}%  Avg: {formatted_avg}")
+        else:
+            echo(f"  {ttl:2d}: *  (Firewall)")
+
+            if ttl > 5 and responses == 0:
+                return hops
+
+    return hops
+
+
 @retry()
-def speedtest_internet_connectivity() -> Tuple[float, float, float]:
+def speedtest_internet_connectivity(trace: bool = False) -> Tuple[float, float, float]:
     echo("Testing internet speed from current device...")
     st = Speedtest(secure=True)
-    st.get_best_server()
-    echo("Measuring download speed...")
+    best_server = st.get_best_server()
+    target_ip = best_server["host"]
+    if trace:
+        hops = _traceroute(target_ip)
+        echo(f"Number of hops: {hops}")
+    echo("\nMeasuring download speed...")
     download_speed_bytes = st.download()
     download_speed_mbps = convert_bytes_to_mbps(download_speed_bytes)
     echo(f"Download speed: {download_speed_mbps} Mbps")
@@ -280,12 +350,12 @@ def speedtest_internet_connectivity() -> Tuple[float, float, float]:
     return download_speed_mbps, upload_speed_mbps, ping_time_ms
 
 
-def test_internet_connectivity(save: bool = False) -> None:
+def test_internet_connectivity(save: bool = False, trace: bool = False) -> None:
     try:
         network = get_network()
         current_device = db_get_current_device()
         download_speed_mbps, upload_speed_mbps, ping_time_ms = (
-            speedtest_internet_connectivity()
+            speedtest_internet_connectivity(trace=trace)
         )
         if save:
             network_speed_test = NetworkSpeedTest(
