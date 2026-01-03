@@ -8,7 +8,12 @@ from src.cli.console import console, echo
 from src.core.device import get_devices_on_network, scan_device_for_open_ports
 from src.core.network import get_network, monitor_network, test_internet_connectivity
 from src.database.db import init_db
-from src.database.network import db_list_networks, db_update_network
+from src.database.network import (
+    db_delete_network,
+    db_get_network_by_id,
+    db_list_networks,
+    db_update_network,
+)
 from src.logging_conf import set_log_level
 from src.utils import lower_string
 
@@ -170,4 +175,38 @@ def register_base_network_commands(app: Typer) -> None:
             test_internet_connectivity(save=save)
         except Exception as e:
             logger.error(f"Error testing internet connectivity: {e}")
+            raise Exit(code=1)
+
+    @app.command("delete", help="Delete a network and all associated data")
+    def delete(
+        network_id: int = Option(..., "--id", "-i", help="Network ID to delete"),
+        verbose: bool = Option(
+            False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
+        ),
+    ):
+        if verbose:
+            set_log_level("DEBUG")
+        try:
+            network = db_get_network_by_id(network_id)
+            if not network:
+                echo(f"Network {network_id} not found")
+                raise Exit(code=1)
+
+            echo(
+                f"Warning: This will delete network {network_id} and all associated data:"
+            )
+            echo("  - All device port records")
+            echo("  - All network speed test records")
+            echo("  - All device records")
+            echo("  - The network record")
+            if not confirm("Are you sure you want to continue?", default=False):
+                echo("Network deletion cancelled.")
+                raise Abort()
+
+            db_delete_network(network_id)
+            echo(f"Network {network_id} deleted successfully")
+        except Abort:
+            raise
+        except Exception as e:
+            logger.error(f"Error deleting network: {e}")
             raise Exit(code=1)

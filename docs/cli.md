@@ -22,6 +22,7 @@ $ networker [OPTIONS] COMMAND [ARGS]...
 * `update`: Update the network information
 * `monitor`: Monitor network traffic.
 * `test`: Test internet connectivity
+* `delete`: Delete a network and all associated data
 * `device`: Device commands
 * `inference`: Inference commands
 
@@ -123,6 +124,22 @@ $ networker test [OPTIONS]
 * `-s, --save`: Save the internet connectivity test results to the database
 * `--help`: Show this message and exit.
 
+## `networker delete`
+
+Delete a network and all associated data
+
+**Usage**:
+
+```console
+$ networker delete [OPTIONS]
+```
+
+**Options**:
+
+* `-i, --id INTEGER`: Network ID to delete  [required]
+* `-v, --verbose`: Enable verbose (DEBUG) logging
+* `--help`: Show this message and exit.
+
 ## `networker device`
 
 Device commands
@@ -142,6 +159,7 @@ $ networker device [OPTIONS] COMMAND [ARGS]...
 * `scan`: Scan the device for open ports
 * `list`: List information on devices stored
 * `update`: Update the device information
+* `delete`: Delete a device and all associated data
 
 ### `networker device scan`
 
@@ -189,6 +207,22 @@ $ networker device update [OPTIONS]
 
 * `-i, --id INTEGER`: Device ID to update  [required]
 * `-d, --data TEXT`: JSON dictionary of fields to update (e.g., &#x27;{&quot;device_name&quot;: &quot;my device&quot;}&#x27;)  [required]
+* `-v, --verbose`: Enable verbose (DEBUG) logging
+* `--help`: Show this message and exit.
+
+### `networker device delete`
+
+Delete a device and all associated data
+
+**Usage**:
+
+```console
+$ networker device delete [OPTIONS]
+```
+
+**Options**:
+
+* `-i, --id INTEGER`: Device ID to delete  [required]
 * `-v, --verbose`: Enable verbose (DEBUG) logging
 * `--help`: Show this message and exit.
 

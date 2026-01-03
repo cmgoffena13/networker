@@ -2,10 +2,12 @@ from typing import Any, List, Optional
 
 import structlog
 from pendulum import now
-from sqlmodel import Session, select
+from sqlmodel import Session, delete, select
 
 from src.database.db import engine
 from src.exceptions import NetworkNotFoundError
+from src.models.device import Device
+from src.models.device_port import DevicePort
 from src.models.network import Network, NetworkSpeedTest
 
 logger = structlog.getLogger(__name__)
@@ -119,3 +121,36 @@ def db_get_latest_network_speed_test(
         return session.exec(
             select(NetworkSpeedTest).where(NetworkSpeedTest.id == network_speed_test_id)
         ).first()
+
+
+def db_delete_network(network_id: int) -> None:
+    logger.debug(
+        f"Deleting network id {network_id} and associated data from database..."
+    )
+    with Session(engine) as session:
+        try:
+            device_ids = session.exec(
+                select(Device.id).where(Device.network_id == network_id)
+            ).all()
+            if device_ids:
+                session.exec(
+                    delete(DevicePort).where(DevicePort.device_id.in_(device_ids))
+                )
+            session.exec(
+                delete(NetworkSpeedTest).where(
+                    NetworkSpeedTest.network_id == network_id
+                )
+            )
+            session.exec(delete(Device).where(Device.network_id == network_id))
+            session.exec(delete(Network).where(Network.id == network_id))
+            session.commit()
+            logger.debug(f"Network id {network_id} deleted from database")
+        except Exception:
+            session.rollback()
+            raise
+
+
+def db_get_network_by_id(network_id: int) -> Optional[Network]:
+    logger.debug(f"Getting network from database by id: {network_id}...")
+    with Session(engine) as session:
+        return session.exec(select(Network).where(Network.id == network_id)).first()
