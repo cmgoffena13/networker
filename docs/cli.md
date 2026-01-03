@@ -52,7 +52,7 @@ $ networker network [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
-* `scan`: Scan the network for open ports on devices
+* `scan`: Scan the network for devices
 * `list`: List information on networks stored
 * `update`: Update the network information
 * `monitor`: Monitor network traffic
@@ -60,7 +60,7 @@ $ networker network [OPTIONS] COMMAND [ARGS]...
 
 ### `networker network scan`
 
-Scan the network for open ports on devices
+Scan the network for devices
 
 **Usage**:
 
@@ -122,6 +122,7 @@ $ networker network monitor [OPTIONS]
 * `-f, --filter TEXT`: Filter network traffic
 * `-v, --verbose`: Enable verbose (DEBUG) logging
 * `-e, --exclude-host`: Exclude the host from the network traffic
+* `-d, --dns`: Monitor DNS traffic
 * `--help`: Show this message and exit.
 
 ### `networker network test`

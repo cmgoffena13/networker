@@ -15,7 +15,7 @@ logger = structlog.getLogger(__name__)
 network_typer = Typer(help="Network commands")
 
 
-@network_typer.command("scan", help="Scan the network for open ports on devices")
+@network_typer.command("scan", help="Scan the network for devices")
 def scan(
     save: bool = Option(
         False, "--save", "-s", help="Save the network scan results to the database"
