@@ -11,6 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine
 
+from src.cli.console import echo
 from src.models import *
 from src.models.device_inference import DeviceInference
 from src.protocol import Protocol
@@ -45,6 +46,7 @@ def get_db_path():
 
     if not user_db.exists() and schema_db.exists():
         shutil.copy2(schema_db, user_db)
+        echo(f"Created user database: {user_db}")
         logger.debug(f"Copied schema database from {schema_db} to {user_db}")
 
     return user_db
@@ -53,7 +55,9 @@ def get_db_path():
 def create_new_engine():
     _register_pendulum_adapters()
     db_path = get_db_path()
-    return create_engine(f"sqlite:///{db_path}")
+    db_url = f"sqlite:///{db_path}"
+    logger.debug(f"Creating engine with URL: {db_url}")
+    return create_engine(db_url)
 
 
 engine = create_new_engine()
