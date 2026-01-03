@@ -23,7 +23,6 @@ from src.core.packet import PacketHandler
 from src.database.device import db_get_current_device
 from src.database.network import (
     db_get_latest_network_speed_test,
-    db_get_network,
     db_save_network,
     db_save_network_speed_test,
 )
@@ -91,8 +90,9 @@ def get_netmask() -> Optional[str]:
             if match:
                 netmask = match.group(1)
     else:
+        ifconfig_path = "/sbin/ifconfig" if sys.platform == "darwin" else "ifconfig"
         result = subprocess.run(
-            ["ifconfig", interface_name], capture_output=True, text=True, timeout=5
+            [ifconfig_path, interface_name], capture_output=True, text=True, timeout=5
         )
         if result.returncode == 0:
             # Look for netmask (format: netmask 0xffffff00 or netmask 255.255.255.0)
@@ -140,7 +140,7 @@ def get_public_ip() -> Optional[str]:
         raise e
 
 
-def get_network(save: bool = False) -> Optional[Network]:
+def get_network() -> Network:
     logger.debug("Getting network info...")
     network_info = get_network_info()
     if not network_info:
@@ -155,14 +155,8 @@ def get_network(save: bool = False) -> Optional[Network]:
         ips_available=network_info.num_addresses - 2,
         public_ip=get_public_ip(),
     )
-    if save:
-        saved_network = db_save_network(network)
-        network = saved_network
-        echo("Network info logged to database.")
-    else:
-        saved_network = db_get_network(network)
-        if saved_network:
-            network = saved_network
+    network = db_save_network(network)
+    logger.debug("Network info logged to database.")
     return network
 
 
@@ -350,29 +344,26 @@ def speedtest_internet_connectivity(trace: bool = False) -> Tuple[float, float, 
     return download_speed_mbps, upload_speed_mbps, ping_time_ms
 
 
-def test_internet_connectivity(save: bool = False, trace: bool = False) -> None:
+def test_internet_connectivity(trace: bool = False) -> None:
     try:
         network = get_network()
         current_device = db_get_current_device()
         download_speed_mbps, upload_speed_mbps, ping_time_ms = (
             speedtest_internet_connectivity(trace=trace)
         )
-        if save:
-            network_speed_test = NetworkSpeedTest(
-                network_id=network.id,
-                device_id=current_device.id,
-                download_speed_mbps=download_speed_mbps,
-                upload_speed_mbps=upload_speed_mbps,
-                ping_time_ms=ping_time_ms,
-            )
-            db_save_network_speed_test(network_speed_test)
-            echo("Network speed test saved to database.")
+        network_speed_test = NetworkSpeedTest(
+            network_id=network.id,
+            device_id=current_device.id,
+            download_speed_mbps=download_speed_mbps,
+            upload_speed_mbps=upload_speed_mbps,
+            ping_time_ms=ping_time_ms,
+        )
+        db_save_network_speed_test(network_speed_test)
+        logger.debug("Network speed test saved to database.")
 
-        last_network_speed_test = None
-        if network.id and current_device.id:
-            last_network_speed_test = db_get_latest_network_speed_test(
-                network.id, current_device.id
-            )
+        last_network_speed_test = db_get_latest_network_speed_test(
+            network.id, current_device.id
+        )
         if last_network_speed_test:
             echo("\n")
             created_at = pendulum.instance(

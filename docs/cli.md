@@ -1,6 +1,6 @@
 # `networker`
 
-Networker CLI - Interact with your local network
+Networker CLI - Interact with your local area network (LAN)
 
 **Usage**:
 
@@ -53,7 +53,6 @@ $ networker scan [OPTIONS]
 
 **Options**:
 
-* `-s, --save`: Save the network scan results to the database
 * `-v, --verbose`: Enable verbose (DEBUG) logging
 * `-p, --ports`: Scan the network for open ports on devices
 * `--help`: Show this message and exit.
@@ -92,7 +91,7 @@ $ networker update [OPTIONS]
 
 ## `networker monitor`
 
-Monitor network traffic. Ex &#x27;tcp port 80&#x27;
+Monitor network traffic.
 
 **Usage**:
 
@@ -102,7 +101,7 @@ $ networker monitor [OPTIONS]
 
 **Options**:
 
-* `-f, --filter TEXT`: Filter network traffic
+* `-f, --filter TEXT`: Filter network traffic. Ex &#x27;tcp port 80&#x27;
 * `-v, --verbose`: Enable verbose (DEBUG) logging
 * `-e, --exclude-host`: Exclude the host from the network traffic
 * `-d, --dns`: Monitor DNS traffic
@@ -121,7 +120,6 @@ $ networker test [OPTIONS]
 **Options**:
 
 * `-v, --verbose`: Enable verbose (DEBUG) logging
-* `-s, --save`: Save the internet connectivity test results to the database
 * `-t, --trace`: Trace the internet connectivity test
 * `--help`: Show this message and exit.
 
@@ -174,7 +172,6 @@ $ networker device scan [OPTIONS]
 
 **Options**:
 
-* `-s, --save`: Save the device scan results to the database
 * `-v, --verbose`: Enable verbose (DEBUG) logging
 * `-i, --id INTEGER`: Device ID to scan for open ports  [required]
 * `--help`: Show this message and exit.
@@ -244,7 +241,6 @@ $ networker inference [OPTIONS] COMMAND [ARGS]...
 **Commands**:
 
 * `list`: List all inferences
-* `update`: Update inferences by deleting and re-seeding
 
 ### `networker inference list`
 
@@ -254,21 +250,6 @@ List all inferences
 
 ```console
 $ networker inference list [OPTIONS]
-```
-
-**Options**:
-
-* `-v, --verbose`: Enable verbose (DEBUG) logging
-* `--help`: Show this message and exit.
-
-### `networker inference update`
-
-Update inferences by deleting and re-seeding
-
-**Usage**:
-
-```console
-$ networker inference update [OPTIONS]
 ```
 
 **Options**:

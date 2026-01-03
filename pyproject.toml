@@ -1,18 +1,12 @@
 [project]
 name = "networker"
 version = "0.1.0"
-description = "Add your description here"
+description = "Local Area Network CLI"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "azure-identity>=1.25.1",
-    "azure-keyvault-secrets>=4.10.0",
-    "boto3>=1.42.15",
     "certifi>=2025.11.12",
-    "google-cloud-secret-manager>=2.26.0",
     "httpx>=0.28.1",
-    "opentelemetry-exporter-otlp-proto-http>=1.39.1",
-    "opentelemetry-sdk>=1.39.1",
     "polars>=1.36.1",
     "pydantic-extra-types[pendulum]>=2.10.6",
     "pydantic-settings>=2.12.0",
@@ -32,11 +26,9 @@ pythonpath = [ "." ]
 [tool.ruff]
 lint.select = ["I"]
 
-[project.scripts]
-networker = "src.cli.main:main"
-
 [dependency-groups]
 dev = [
+    "nuitka>=2.8.9",
     "pre-commit>=4.5.1",
     "pytest>=9.0.2",
     "pytest-xdist>=3.8.0",

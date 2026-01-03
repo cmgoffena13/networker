@@ -1,9 +1,12 @@
+import ipaddress
 from typing import Any, List, Optional
 
 import structlog
 from pendulum import now
+from sqlalchemy import func
 from sqlmodel import Session, delete, select
 
+from src.cli.console import echo
 from src.database.db import engine
 from src.exceptions import NetworkNotFoundError
 from src.models.device import Device
@@ -35,15 +38,23 @@ def db_save_network(network: Network) -> Network:
             try:
                 session.commit()
                 session.refresh(existing)
+                logger.debug(f"Network id {existing.id} updated in database")
             except Exception:
                 session.rollback()
                 raise
             return existing
         else:
+            netmask_int = int(ipaddress.IPv4Address(network.netmask))
+            prefix_length = bin(netmask_int).count("1")
+            echo(
+                f"New network detected: {network.network_address}/{prefix_length}",
+                bold=True,
+            )
             session.add(network)
             try:
                 session.commit()
                 session.refresh(network)
+                logger.debug(f"Network id {network.id} saved to database")
             except Exception:
                 session.rollback()
                 raise
@@ -82,6 +93,7 @@ def db_update_network(id: int, **kwargs: Any) -> Network:
             try:
                 session.commit()
                 session.refresh(existing)
+                logger.debug(f"Network id {existing.id} updated in database")
             except Exception:
                 session.rollback()
                 raise
@@ -90,17 +102,65 @@ def db_update_network(id: int, **kwargs: Any) -> Network:
             raise NetworkNotFoundError(f"Network not found: {id}")
 
 
+def _cleanup_network_speed_tests(network_id: int, device_id: int) -> None:
+    logger.debug("Checking for network speed test cleanup...")
+    with Session(engine) as session:
+        count_result = session.exec(
+            select(func.count(NetworkSpeedTest.id)).where(
+                NetworkSpeedTest.network_id == network_id,
+                NetworkSpeedTest.device_id == device_id,
+            )
+        ).one()
+
+        if count_result and count_result > 100:
+            logger.debug(
+                f"Cleaning up network speed tests for network id {network_id} and device id {device_id}..."
+            )
+            subquery = (
+                select(NetworkSpeedTest.id)
+                .where(
+                    NetworkSpeedTest.network_id == network_id,
+                    NetworkSpeedTest.device_id == device_id,
+                )
+                .order_by(NetworkSpeedTest.id.desc())
+                .limit(100)
+                .subquery()
+            )
+            min_id = session.exec(select(func.min(subquery.c.id))).one()
+
+            session.exec(
+                delete(NetworkSpeedTest).where(
+                    NetworkSpeedTest.network_id == network_id,
+                    NetworkSpeedTest.device_id == device_id,
+                    NetworkSpeedTest.id < min_id,
+                )
+            )
+            try:
+                session.commit()
+            except Exception:
+                session.rollback()
+                raise
+            logger.debug(
+                f"Deleted old network speed test records for network id {network_id} and device id {device_id} (keeping records with id >= {min_id})"
+            )
+
+
 def db_save_network_speed_test(
     network_speed_test: NetworkSpeedTest,
-) -> NetworkSpeedTest:
+) -> None:
     logger.debug(f"Saving network speed test to database: {network_speed_test}")
     with Session(engine) as session:
         session.add(network_speed_test)
         try:
             session.commit()
+            logger.debug(f"Network speed test saved to database")
         except Exception:
             session.rollback()
             raise
+
+    _cleanup_network_speed_tests(
+        network_speed_test.network_id, network_speed_test.device_id
+    )
 
 
 def db_get_latest_network_speed_test(

@@ -1,7 +1,6 @@
 from typing import List, Optional, Set, Tuple
 
 import structlog
-from pendulum import now
 from sqlmodel import Session, select
 
 from src.database.db import engine
@@ -41,7 +40,7 @@ def score_inference(
 
 
 def db_infer_device_type(
-    device_ports: List[DevicePort], device_id: int, save: bool = False
+    device_ports: List[DevicePort], device_id: int
 ) -> Tuple[Optional[str], Optional[float]]:
     logger.debug(f"Inferring device type from database for device ID {device_id}")
     tcp_ports = {dp.port_number for dp in device_ports if dp.protocol == Protocol.TCP}
@@ -68,16 +67,14 @@ def db_infer_device_type(
                 total_matched / total_sig_ports if total_sig_ports > 0 else 0.0
             )
 
-            if save and best_inference:
-                db_update_device(
-                    device_id,
-                    device_inference=best_inference.inference,
-                    inference_match=match_percentage,
-                    updated_at=now(),
-                )
-                logger.debug(
-                    f"Updated device {device_id} in database with inference: {best_inference.inference} (match: {match_percentage:.2%}, score: {best_score:.2f})"
-                )
+            db_update_device(
+                device_id,
+                device_inference=best_inference.inference,
+                inference_match=match_percentage,
+            )
+            logger.debug(
+                f"Updated device {device_id} in database with inference: {best_inference.inference} (match: {match_percentage:.2%}, score: {best_score:.2f})"
+            )
             return (best_inference.inference, match_percentage)
 
         logger.debug(f"No inferences found in database for device ID {device_id}")

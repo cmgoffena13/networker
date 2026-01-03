@@ -44,9 +44,6 @@ def register_base_network_commands(app: Typer) -> None:
 
     @app.command("scan", help="Scan the network for devices")
     def scan(
-        save: bool = Option(
-            False, "--save", "-s", help="Save the network scan results to the database"
-        ),
         verbose: bool = Option(
             False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
         ),
@@ -57,12 +54,12 @@ def register_base_network_commands(app: Typer) -> None:
         if verbose:
             set_log_level("DEBUG")
         try:
-            network = get_network(save=save)
-            devices = get_devices_on_network(network, save=save)
+            network = get_network()
+            devices = get_devices_on_network(network)
             if ports:
                 echo("\nPress Ctrl+C to interrupt scanning and exit...")
                 for device in devices:
-                    scan_device_for_open_ports(device, save=save)
+                    scan_device_for_open_ports(device)
         except Abort:
             raise
         except Exception as e:
@@ -119,10 +116,14 @@ def register_base_network_commands(app: Typer) -> None:
             logger.error(f"Error updating network: {e}")
             raise Exit(code=1)
 
-    @app.command("monitor", help="Monitor network traffic. Ex 'tcp port 80' ")
+    @app.command("monitor", help="Monitor network traffic.")
     def monitor(
         filter: Optional[str] = Option(
-            None, "--filter", "-f", help="Filter network traffic", callback=lower_string
+            None,
+            "--filter",
+            "-f",
+            help="Filter network traffic. Ex 'tcp port 80'",
+            callback=lower_string,
         ),
         verbose: bool = Option(
             False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
@@ -162,12 +163,6 @@ def register_base_network_commands(app: Typer) -> None:
         verbose: bool = Option(
             False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
         ),
-        save: bool = Option(
-            False,
-            "--save",
-            "-s",
-            help="Save the internet connectivity test results to the database",
-        ),
         trace: bool = Option(
             False, "--trace", "-t", help="Trace the internet connectivity test"
         ),
@@ -175,7 +170,7 @@ def register_base_network_commands(app: Typer) -> None:
         if verbose:
             set_log_level("DEBUG")
         try:
-            test_internet_connectivity(save=save, trace=trace)
+            test_internet_connectivity(trace=trace)
         except Exception as e:
             logger.error(f"Error testing internet connectivity: {e}")
             raise Exit(code=1)

@@ -26,9 +26,6 @@ device_typer = Typer(help="Device commands")
 
 @device_typer.command("scan", help="Scan the device for open ports")
 def scan(
-    save: bool = Option(
-        False, "--save", "-s", help="Save the device scan results to the database"
-    ),
     verbose: bool = Option(
         False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
     ),
@@ -39,7 +36,7 @@ def scan(
     try:
         device = db_get_device(device_id)
         echo("\nPress Ctrl+C to interrupt scanning and exit...")
-        scan_device_for_open_ports(device, save=save)
+        scan_device_for_open_ports(device)
     except Abort:
         raise
     except Exception as e:

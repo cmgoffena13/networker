@@ -43,6 +43,7 @@ def db_save_device(device: Device) -> Device:
             try:
                 session.commit()
                 session.refresh(existing)
+                logger.debug(f"Device id {existing.id} updated in database")
             except Exception:
                 session.rollback()
                 raise
@@ -56,6 +57,7 @@ def db_save_device(device: Device) -> Device:
             try:
                 session.commit()
                 session.refresh(device)
+                logger.debug(f"Device id {device.id} saved to database")
             except Exception:
                 session.rollback()
                 raise
@@ -78,6 +80,7 @@ def db_update_device(id: int, **kwargs: Any) -> Device:
             try:
                 session.commit()
                 session.refresh(existing)
+                logger.debug(f"Device id {id} updated in database")
             except Exception:
                 session.rollback()
                 raise

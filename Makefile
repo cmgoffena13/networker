@@ -1,4 +1,4 @@
-.PHONY: format lint test install setup upgrade seed docs
+.PHONY: format lint test install setup upgrade seed docs compile
 
 format: lint
 	uv run -- ruff format
@@ -24,3 +24,12 @@ seed:
 
 docs:
 	PYTHONPATH=. uv run -- typer src.cli.main utils docs --name networker --output docs/cli.md
+
+compile: create-base-db
+	uv run -- nuitka --onefile src/cli/main.py --output-filename=networker --python-flag="no_warnings" --noinclude-data-files=src/tests/* --output-dir=dist/
+
+create-base-db:
+	uv run -- python -m src.database.db create_base_db
+
+update-inferences:
+	uv run -- python -m src.database.db update_inferences

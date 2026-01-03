@@ -53,5 +53,5 @@ class NetworkSpeedTest(SQLModel, table=True):
     )
 
     __table_args__ = (
-        Index("idx_network_id_device_id_id", "network_id", "device_id", "id"),
+        Index("idx_network_id_device_id_id", "id", "network_id", "device_id"),
     )

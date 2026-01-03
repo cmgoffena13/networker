@@ -12,10 +12,7 @@ from tqdm import tqdm
 from typer import Abort
 
 from src.cli.console import display_port_info, echo
-from src.database.device import (
-    db_get_device_by_mac_address,
-    db_save_device,
-)
+from src.database.device import db_save_device
 from src.database.device_inference import db_infer_device_type
 from src.database.device_port import db_list_device_ports, db_save_device_ports
 from src.exceptions import RouterMacNotFoundError
@@ -126,7 +123,7 @@ def get_current_device_info(ip_address: str, network_id: int) -> Device:
     return device
 
 
-def get_devices_on_network(network: Network, save: bool = False) -> List[Device]:
+def get_devices_on_network(network: Network) -> List[Device]:
     echo(f"Getting devices on network: {str(network.network_address)}...")
     devices = []
 
@@ -177,52 +174,23 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
                 is_router=is_router,
                 current_device=False,
             )
-        if save:
-            device = db_save_device(device)
-        else:
-            saved_device = db_get_device_by_mac_address(device.mac_address, network.id)
-            if not saved_device:
-                echo(
-                    f"New device detected: {device.mac_address} ({device.ip_address})",
-                    bold=True,
-                )
-            else:
-                device = saved_device
-
-        if not save:
-            echo(device.model_dump_json(indent=2))
+        device = db_save_device(device)
         devices.append(device)
 
     if current_ip and current_ip not in seen_ips:
         current_device = get_current_device_info(current_ip, network.id)
-        if save:
-            current_device = db_save_device(current_device)
-        else:
-            saved_current_device = db_get_device_by_mac_address(
-                current_device.mac_address, network.id
-            )
-            if not saved_current_device:
-                echo(
-                    f"New current device detected: {current_device.mac_address} ({current_device.ip_address})",
-                    bold=True,
-                )
-            else:
-                current_device = saved_current_device
-
-        if not save:
-            echo(current_device.model_dump_json(indent=2))
+        current_device = db_save_device(current_device)
         devices.append(current_device)
 
-    if save:
-        echo("Devices info logged to database.")
+    logger.debug("Devices info logged to database.")
     return devices
 
 
-def scan_device_for_open_ports(device: Device, save: bool = False) -> None:
-    device_ports = get_open_ports(device, save=save)
+def scan_device_for_open_ports(device: Device) -> None:
+    device_ports = get_open_ports(device)
     device_port_objects = [dp for dp, _, _ in device_ports]
     device_inference, device_inference_match = db_infer_device_type(
-        device_port_objects, device.id, save=save
+        device_port_objects, device.id
     )
     echo(
         f"Device {device.id} Inference: {device_inference}, Match: {device_inference_match}"
@@ -232,7 +200,7 @@ def scan_device_for_open_ports(device: Device, save: bool = False) -> None:
 
 
 def get_open_ports(
-    device: Device, save: bool = False
+    device: Device,
 ) -> List[Tuple[DevicePort, Optional[str], Optional[str]]]:
     device_ports = []
     ports = list(range(1, 65536))
@@ -312,12 +280,9 @@ def get_open_ports(
         else:
             echo(f"Found {len(device_ports)} open ports on device.")
 
-        if save:
-            db_save_device_ports(device_ports, device.id)
-            echo("Open ports saved to database.")
-            result = db_list_device_ports(device.id)
-        else:
-            result = [(dp, None, None) for dp in device_ports]
+        db_save_device_ports(device_ports, device.id)
+        logger.debug("Open ports saved to database.")
+        result = db_list_device_ports(device.id)
 
     except Abort:
         raise

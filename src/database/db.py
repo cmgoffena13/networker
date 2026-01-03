@@ -1,4 +1,6 @@
+import shutil
 import sqlite3
+import sys
 from pathlib import Path
 
 import pendulum
@@ -6,6 +8,7 @@ import polars as pl
 import structlog
 from pydantic_extra_types.pendulum_dt import Date, DateTime
 from sqlalchemy import text
+from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine
 
 from src.models import *
@@ -24,15 +27,39 @@ def _register_pendulum_adapters():
     sqlite3.register_adapter(Date, lambda val: val.format("YYYY-MM-DD"))
 
 
+def get_db_path():
+    """Get the path to the user's database file.
+
+    On first run, copies the schema database to the user's config directory.
+    """
+    if getattr(sys, "frozen", False):
+        base_path = sys._MEIPASS
+    else:
+        base_path = Path(__file__).parent.parent
+
+    schema_db = base_path / "data" / "networker_base.db"
+
+    config_dir = Path.home() / ".config" / "networker"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    user_db = config_dir / "networker.db"
+
+    if not user_db.exists() and schema_db.exists():
+        shutil.copy2(schema_db, user_db)
+        logger.debug(f"Copied schema database from {schema_db} to {user_db}")
+
+    return user_db
+
+
 def create_new_engine():
     _register_pendulum_adapters()
-    return create_engine("sqlite:///networker.db")
+    db_path = get_db_path()
+    return create_engine(f"sqlite:///{db_path}")
 
 
 engine = create_new_engine()
 
 
-def db_seed_ports():
+def db_seed_ports(engine: Engine):
     logger.debug("Inserting ports...")
     script_dir = Path(__file__).parent.parent
     ports_file = script_dir / "seeds" / "output" / "ports.csv"
@@ -62,7 +89,7 @@ def db_seed_ports():
             raise
 
 
-def db_seed_device_inferences():
+def db_seed_device_inferences(engine: Engine):
     logger.debug("Inserting device inferences...")
 
     inferences = [
@@ -146,6 +173,19 @@ def init_db(reset: bool = False):
         logger.debug("Dropping all tables...")
         SQLModel.metadata.drop_all(engine)
     SQLModel.metadata.create_all(engine)
-    db_seed_ports()
-    db_seed_device_inferences()
+    db_seed_ports(engine=engine)
+    db_seed_device_inferences(engine=engine)
     logger.debug("Database initialized")
+
+
+def create_base_db():
+    data_dir = Path(__file__).parent.parent / "data"
+    base_engine = create_engine(f"sqlite:///{data_dir}/networker_base.db")
+    SQLModel.metadata.drop_all(base_engine)
+    SQLModel.metadata.create_all(base_engine)
+    db_seed_ports(engine=base_engine)
+    db_seed_device_inferences(engine=base_engine)
+
+
+def update_inferences(engine: Engine):
+    db_seed_device_inferences(engine=engine)

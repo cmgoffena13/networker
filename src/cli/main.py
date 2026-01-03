@@ -11,7 +11,7 @@ from src.cli.network import register_base_network_commands
 from src.database.db import engine, init_db
 from src.logging_conf import setup_logging
 
-app = Typer(help="Networker CLI - Interact with your local network")
+app = Typer(help="Networker CLI - Interact with your local area network (LAN)")
 register_base_network_commands(app)
 app.add_typer(device_typer, name="device")
 app.add_typer(inference_typer, name="inference")

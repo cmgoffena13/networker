@@ -27,19 +27,3 @@ def list(
     except Exception as e:
         logger.error(f"Error listing inferences: {e}")
         raise Exit(code=1)
-
-
-@inference_typer.command("update", help="Update inferences by deleting and re-seeding")
-def update(
-    verbose: bool = Option(
-        False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
-    ),
-):
-    if verbose:
-        set_log_level("DEBUG")
-    try:
-        db_seed_device_inferences()
-        echo("Inferences updated successfully")
-    except Exception as e:
-        logger.error(f"Error updating inferences: {e}")
-        raise Exit(code=1)
