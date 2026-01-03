@@ -11,7 +11,7 @@ A simple CLI to monitor a local area network (LAN).
 ## Getting Started
 
 1. Navigate to the repo  
-2. Utilize the `./networker scan -s` command to scan your network and log the results
+2. Utilize the `./networker scan -s` command to scan your network and save the results to the database
 
 ## Naming Your Devices
 
