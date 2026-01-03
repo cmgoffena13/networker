@@ -1,51 +1,39 @@
-import ctypes
 import logging
-import os
-import sys
 
 from rich.logging import RichHandler
-from typer import Typer
+from typer import Exit, Option, Typer
 
 from src.cli.console import console, echo
 from src.cli.device import device_typer
 from src.cli.inference import inference_typer
 from src.cli.network import register_base_network_commands
+from src.database.db import get_db_path
 from src.logging_conf import setup_logging
+from src.utils import check_root_and_warn, get_version
 
 app = Typer(help="Networker CLI - Interact with your local area network (LAN)")
+
+
+@app.callback(no_args_is_help=True)
+def main_menu(
+    version: bool = Option(False, "--version", help="Show CLI version and exit"),
+    info: bool = Option(False, "--info", help="Show general CLI info and exit"),
+) -> None:
+    if version:
+        echo(f"Networker version: {get_version()}")
+        raise Exit(code=0)
+    if info:
+        echo(f"Database: {get_db_path()}")
+        raise Exit(code=0)
+
+
 register_base_network_commands(app)
 app.add_typer(device_typer, name="device")
 app.add_typer(inference_typer, name="inference")
 
 
-def _is_root() -> bool:
-    is_admin = False
-    if sys.platform == "win32":
-        try:
-            is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
-        except Exception:
-            is_admin = False
-    else:
-        is_admin = os.geteuid() == 0
-    return is_admin
-
-
 def main() -> None:
-    if not _is_root():
-        if sys.platform == "win32":
-            echo(
-                "[yellow]Warning:[/yellow] Not running as administrator. Networker requires administrator privileges.",
-            )
-            echo(
-                "Please run in an admin terminal.",
-            )
-        else:
-            echo(
-                "[yellow]Warning:[/yellow] Not running as root. Networker requires root privileges.",
-            )
-            echo(
-                "Please run with [bold]sudo networker <command>[/bold]",
-            )
+    if not check_root_and_warn():
         return
 
     setup_logging()

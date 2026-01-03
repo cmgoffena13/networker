@@ -1,9 +1,16 @@
+import ctypes
+import os
 import shutil
+import sys
 import time
+import tomllib
 from functools import wraps
+from pathlib import Path
 from typing import Optional
 
 import structlog
+
+from src.cli.console import echo
 
 logger = structlog.getLogger(__name__)
 
@@ -50,3 +57,44 @@ def find_command(cmd: str, default_paths: list[str] = None) -> str:
                 return default_path
 
     return cmd
+
+
+def get_version() -> str:
+    pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
+    with open(pyproject_path, "rb") as f:
+        pyproject = tomllib.load(f)
+    return pyproject["project"]["version"]
+
+
+def check_root_and_warn() -> bool:
+    """Check if running as root/admin and warn if not.
+
+    Returns True if running as root/admin, False otherwise.
+    If not root, displays a warning message and returns False.
+    """
+    is_admin = False
+    if sys.platform == "win32":
+        try:
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+        except Exception:
+            is_admin = False
+    else:
+        is_admin = os.geteuid() == 0
+
+    if not is_admin:
+        if sys.platform == "win32":
+            echo(
+                "[yellow]Warning:[/yellow] Not running as administrator. Networker requires administrator privileges.",
+            )
+            echo(
+                "Please run in an admin terminal.",
+            )
+        else:
+            echo(
+                "[yellow]Warning:[/yellow] Not running as root. Networker requires root privileges.",
+            )
+            echo(
+                "Please run with [bold]sudo networker <command>[/bold]",
+            )
+
+    return is_admin

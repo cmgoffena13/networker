@@ -217,4 +217,4 @@ def register_base_network_commands(app: Typer) -> None:
         schema_db = base_path / "data" / "networker_base.db"
         user_db_path.unlink(missing_ok=True)
         shutil.copy2(schema_db, user_db_path)
-        echo("Database reset and seeded lookup data")
+        echo("Database reset")

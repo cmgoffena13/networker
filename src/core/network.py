@@ -358,6 +358,9 @@ def test_internet_connectivity(trace: bool = False) -> None:
     try:
         network = get_network()
         current_device = db_get_current_device()
+        if not current_device:
+            echo("Current device not found. Please scan the network first.")
+            return
         download_speed_mbps, upload_speed_mbps, ping_time_ms = (
             speedtest_internet_connectivity(trace=trace)
         )
