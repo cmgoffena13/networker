@@ -18,9 +18,7 @@ logger = structlog.getLogger(__name__)
 def register_base_network_commands(app: Typer) -> None:
     """Register network commands directly on the main app"""
 
-    @app.command(
-        "reset", help="Reset the database by dropping all tables and recreating them"
-    )
+    @app.command("reset", help="Reset the database. Deletes information.")
     def reset(
         verbose: bool = Option(
             False, "--verbose", "-v", help="Enable verbose (DEBUG) logging"
