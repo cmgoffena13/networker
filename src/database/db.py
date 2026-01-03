@@ -140,13 +140,12 @@ def db_seed_device_inferences():
             raise
 
 
-def init_db(init: bool = False):
+def init_db(reset: bool = False):
     logger.debug("Initializing database...")
-    if init:
+    if reset:
         logger.debug("Dropping all tables...")
         SQLModel.metadata.drop_all(engine)
     SQLModel.metadata.create_all(engine)
-    if init:
-        db_seed_ports()
-        db_seed_device_inferences()
+    db_seed_ports()
+    db_seed_device_inferences()
     logger.debug("Database initialized")

@@ -16,19 +16,23 @@ $ networker [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
-* `init`: Initialize the sqlite database and seed...
-* `network`: Network commands
+* `reset`: Reset the database by dropping all tables...
+* `scan`: Scan the network for devices
+* `list`: List information on networks stored
+* `update`: Update the network information
+* `monitor`: Monitor network traffic
+* `test`: Test internet connectivity
 * `device`: Device commands
 * `inference`: Inference commands
 
-## `networker init`
+## `networker reset`
 
-Initialize the sqlite database and seed lookup data
+Reset the database by dropping all tables and recreating them
 
 **Usage**:
 
 ```console
-$ networker init [OPTIONS]
+$ networker reset [OPTIONS]
 ```
 
 **Options**:
@@ -36,36 +40,14 @@ $ networker init [OPTIONS]
 * `-v, --verbose`: Enable verbose (DEBUG) logging
 * `--help`: Show this message and exit.
 
-## `networker network`
-
-Network commands
-
-**Usage**:
-
-```console
-$ networker network [OPTIONS] COMMAND [ARGS]...
-```
-
-**Options**:
-
-* `--help`: Show this message and exit.
-
-**Commands**:
-
-* `scan`: Scan the network for devices
-* `list`: List information on networks stored
-* `update`: Update the network information
-* `monitor`: Monitor network traffic
-* `test`: Test internet connectivity
-
-### `networker network scan`
+## `networker scan`
 
 Scan the network for devices
 
 **Usage**:
 
 ```console
-$ networker network scan [OPTIONS]
+$ networker scan [OPTIONS]
 ```
 
 **Options**:
@@ -75,14 +57,14 @@ $ networker network scan [OPTIONS]
 * `-p, --ports`: Scan the network for open ports on devices
 * `--help`: Show this message and exit.
 
-### `networker network list`
+## `networker list`
 
 List information on networks stored
 
 **Usage**:
 
 ```console
-$ networker network list [OPTIONS]
+$ networker list [OPTIONS]
 ```
 
 **Options**:
@@ -90,14 +72,14 @@ $ networker network list [OPTIONS]
 * `-v, --verbose`: Enable verbose (DEBUG) logging
 * `--help`: Show this message and exit.
 
-### `networker network update`
+## `networker update`
 
 Update the network information
 
 **Usage**:
 
 ```console
-$ networker network update [OPTIONS]
+$ networker update [OPTIONS]
 ```
 
 **Options**:
@@ -107,14 +89,14 @@ $ networker network update [OPTIONS]
 * `-v, --verbose`: Enable verbose (DEBUG) logging
 * `--help`: Show this message and exit.
 
-### `networker network monitor`
+## `networker monitor`
 
 Monitor network traffic
 
 **Usage**:
 
 ```console
-$ networker network monitor [OPTIONS]
+$ networker monitor [OPTIONS]
 ```
 
 **Options**:
@@ -125,14 +107,14 @@ $ networker network monitor [OPTIONS]
 * `-d, --dns`: Monitor DNS traffic
 * `--help`: Show this message and exit.
 
-### `networker network test`
+## `networker test`
 
 Test internet connectivity
 
 **Usage**:
 
 ```console
-$ networker network test [OPTIONS]
+$ networker test [OPTIONS]
 ```
 
 **Options**:

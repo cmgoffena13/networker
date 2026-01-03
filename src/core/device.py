@@ -9,7 +9,7 @@ import httpx
 import structlog
 from scapy.all import ARP, IP, TCP, UDP, Ether, conf, get_if_hwaddr, sr, srp
 from tqdm import tqdm
-from typer import Abort, Exit
+from typer import Abort
 
 from src.cli.console import display_port_info, echo
 from src.database.device import (
@@ -139,11 +139,19 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
     arp_request_broadcast = broadcast / arp_request
     answered, unanswered = srp(arp_request_broadcast, timeout=2, verbose=False)
 
-    echo(f"Found {len(answered)} devices on network: {network.network_address}")
-    echo(f"Gathering device information...")
-
     current_ip = get_current_device_ip()
     seen_ips = set()
+
+    total_device_count = len(answered)
+    if current_ip:
+        current_ip_in_answered = any(
+            received.psrc == current_ip for sent, received in answered
+        )
+        if not current_ip_in_answered:
+            total_device_count += 1
+
+    echo(f"Found {total_device_count} devices on network: {network.network_address}")
+    echo(f"Gathering device information...")
 
     for sent, received in answered:
         ip = received.psrc
@@ -200,6 +208,9 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
                 )
             else:
                 current_device = saved_current_device
+
+        if not save:
+            echo(current_device.model_dump_json(indent=2))
         devices.append(current_device)
 
     if save:
