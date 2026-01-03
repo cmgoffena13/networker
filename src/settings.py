@@ -25,7 +25,7 @@ class GlobalConfig(BaseConfig):
 
 
 class DevConfig(GlobalConfig):
-    LOG_LEVEL: LogLevel = "DEBUG"
+    LOG_LEVEL: LogLevel = "WARNING"
 
     model_config = SettingsConfigDict(env_prefix="DEV_")
 
@@ -37,7 +37,7 @@ class TestConfig(GlobalConfig):
 
 
 class ProdConfig(GlobalConfig):
-    LOG_LEVEL: LogLevel = "WARNING"
+    LOG_LEVEL: LogLevel = "ERROR"
 
     model_config = SettingsConfigDict(env_prefix="PROD_")
 
