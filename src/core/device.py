@@ -180,6 +180,9 @@ def get_devices_on_network(network: Network, save: bool = False) -> List[Device]
                 )
             else:
                 device = saved_device
+
+        if not save:
+            echo(device.model_dump_json(indent=2))
         devices.append(device)
 
     if current_ip and current_ip not in seen_ips:
