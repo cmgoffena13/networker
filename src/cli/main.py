@@ -25,10 +25,7 @@ def main_menu(
         echo(f"Networker version: {get_version()}")
         raise Exit(code=0)
     if info:
-        if getattr(sys, "frozen", False):
-            cli_path = Path(sys.executable)
-        else:
-            cli_path = Path(__file__).parent.parent.parent / "dist/networker"
+        cli_path = Path(sys.argv[0]).resolve()
         echo(f"CLI Path: {cli_path}")
         echo(f"Database Path: {get_db_path()}")
         raise Exit(code=0)
