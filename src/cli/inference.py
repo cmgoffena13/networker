@@ -2,7 +2,6 @@ import structlog
 from typer import Exit, Option, Typer
 
 from src.cli.console import echo
-from src.database.db import db_seed_device_inferences
 from src.database.device_inference import db_list_inferences
 from src.logging_conf import set_log_level
 
