@@ -49,14 +49,14 @@ def db_save_device(device: Device) -> Device:
                 raise
             return existing
         else:
-            echo(
-                f"New device detected: {device.mac_address} ({device.ip_address})",
-                bold=True,
-            )
             session.add(device)
             try:
                 session.commit()
                 session.refresh(device)
+                echo(
+                    f"New device detected: {device.mac_address} (IP: {device.ip_address}, ID: {device.id})",
+                    bold=True,
+                )
                 logger.debug(f"Device id {device.id} saved to database")
             except Exception:
                 session.rollback()
