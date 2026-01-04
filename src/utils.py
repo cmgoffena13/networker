@@ -60,7 +60,7 @@ def find_command(cmd: str, default_paths: list[str] = None) -> str:
 
 
 def get_version() -> str:
-    pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
+    pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
     with open(pyproject_path, "rb") as f:
         pyproject = tomllib.load(f)
     return pyproject["project"]["version"]
