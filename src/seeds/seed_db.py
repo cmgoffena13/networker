@@ -3,10 +3,10 @@ from pathlib import Path
 import polars as pl
 import structlog
 from sqlalchemy.engine import Engine
-from sqlmodel import Session, SQLModel, create_engine
-from sqlmodel.sql.expression import text
+from sqlmodel import Session, SQLModel, create_engine, text
 
-from src.models import DeviceInference, Port, Protocol
+from src.models import DeviceInference, Port
+from src.protocol import Protocol
 
 logger = structlog.getLogger(__name__)
 
