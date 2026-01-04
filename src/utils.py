@@ -60,7 +60,20 @@ def find_command(cmd: str, default_paths: list[str] = None) -> str:
 
 
 def get_version() -> str:
-    pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
+    if getattr(sys, "frozen", False):
+        base_path = Path(sys._MEIPASS)
+        pyproject_path = base_path / "pyproject.toml"
+        if not pyproject_path.exists():
+            exe_path = Path(
+                sys.executable if hasattr(sys, "executable") else sys.argv[0]
+            )
+            pyproject_path = exe_path.parent / "pyproject.toml"
+    else:
+        pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
+
+    if not pyproject_path.exists():
+        raise FileNotFoundError(f"Could not find pyproject.toml at {pyproject_path}")
+
     with open(pyproject_path, "rb") as f:
         pyproject = tomllib.load(f)
     return pyproject["project"]["version"]

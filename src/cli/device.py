@@ -91,7 +91,7 @@ def update(
     try:
         updated_device = db_update_device(device_id, **kwargs)
         echo(f"Device {device_id} updated successfully")
-        echo(f"Updated device: {updated_device.model_dump_json(indent=2)}")
+        echo(updated_device.model_dump())
     except Exception as e:
         logger.exception(f"Error updating device: {e}")
         raise Exit(code=1)

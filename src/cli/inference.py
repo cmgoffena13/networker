@@ -23,7 +23,7 @@ def list(
         inferences = db_list_inferences()
         echo(f"Listing {len(inferences)} inferences...")
         for inference in inferences:
-            echo(f"Inference: {inference.model_dump_json(indent=2)}")
+            echo(inference.model_dump())
     except Exception as e:
         logger.exception(f"Error listing inferences: {e}")
         raise Exit(code=1)

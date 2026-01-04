@@ -62,7 +62,7 @@ def register_base_network_commands(app: Typer) -> None:
             networks = db_list_networks()
             echo(f"Listing {len(networks)} networks...")
             for network in networks:
-                echo(f"Network: {network.model_dump_json(indent=2)}")
+                echo(network.model_dump())
         except Exception as e:
             logger.exception(f"Error listing networks: {e}")
             raise Exit(code=1)
@@ -95,7 +95,7 @@ def register_base_network_commands(app: Typer) -> None:
         try:
             updated_network = db_update_network(network_id, **kwargs)
             echo(f"Network {network_id} updated successfully")
-            echo(f"Updated network: {updated_network.model_dump_json(indent=2)}")
+            echo(updated_network.model_dump())
         except Exception as e:
             logger.exception(f"Error updating network: {e}")
             raise Exit(code=1)

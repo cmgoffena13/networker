@@ -2,6 +2,7 @@ import json
 from typing import List, Optional, Tuple
 
 from rich.console import Console
+from rich.json import JSON
 from rich.theme import Theme
 
 from src.models.device import Device
@@ -20,7 +21,11 @@ matrix_theme = Theme(
 console = Console(theme=matrix_theme)
 
 
-def echo(message: str, bold: bool = False, **kwargs):
+def echo(message: str | dict, bold: bool = False, **kwargs):
+    if isinstance(message, dict):
+        json_str = json.dumps(message, indent=2, default=str)
+        message = JSON(json_str)
+
     if not bold:
         console.print(message, style="green", **kwargs)
     else:
@@ -40,7 +45,7 @@ def display_port_info(
 def format_device_with_ports_json(
     device: Device,
     device_ports: List[Tuple[DevicePort, Optional[str], Optional[str]]],
-) -> str:
+) -> dict:
     device_dict = device.model_dump()
     ports_list = [
         {
@@ -53,4 +58,4 @@ def format_device_with_ports_json(
     ]
     device_dict = dict(sorted(device_dict.items()))
     device_dict["open_ports"] = ports_list
-    return json.dumps(device_dict, indent=2, default=str)
+    return device_dict
