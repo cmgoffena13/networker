@@ -54,7 +54,6 @@ def get_mac_vendor_name(
                 f"Unexpected response from maclookup.app: {response.status_code}"
             )
     except Exception as e:
-        logger.error(f"Error getting vendor name for {mac_address}: {e}")
         raise e
 
     return vendor_name

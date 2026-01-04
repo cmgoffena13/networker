@@ -146,7 +146,6 @@ def get_public_ip() -> Optional[str]:
             logger.debug(f"Public IP: {ip_address}")
             return ip_address
     except Exception as e:
-        logger.error(f"Error getting public IP: {e}")
         raise e
 
 

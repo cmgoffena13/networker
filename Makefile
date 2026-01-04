@@ -29,10 +29,10 @@ compile: create-base-db
 	uv run -- nuitka --onefile src/cli/main.py --output-filename=networker --python-flag="no_warnings" --include-data-files=pyproject.toml=pyproject.toml --noinclude-data-files=src/tests/* --noinclude-data-files=src/seeds/* --output-dir=dist/
 
 create-base-db:
-	uv run -- python -m src.database.db create_base_db
+	uv run -- python -m src.seeds.seed_db create_base_db
 
 update-inferences:
-	uv run -- python -m src.database.db update_inferences
+	uv run -- python -m src.seeds.seed_db update_inferences
 
 copy-cli:
 	sudo cp dist/networker /usr/local/bin/networker
