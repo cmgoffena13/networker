@@ -73,18 +73,9 @@ jobs:
 
       - name: Build with Nuitka (Windows)
         if: matrix.os == 'windows-latest'
+        shell: cmd
         run: |
-          uv run -- nuitka \
-            --onefile \
-            src/cli/main.py \
-            --output-filename=networker.exe \
-            --python-flag="no_warnings" \
-            --include-data-files=pyproject.toml=pyproject.toml \
-            --noinclude-data-files=src/tests/* \
-            --noinclude-data-files=src/seeds/* \
-            --nofollow-import-to=src.seeds \
-            --nofollow-import-to=polars \
-            --output-dir=dist/
+          uv run -- nuitka --onefile src/cli/main.py --output-filename=networker.exe --python-flag="no_warnings" --include-data-files=pyproject.toml=pyproject.toml --noinclude-data-files=src/tests/* --noinclude-data-files=src/seeds/* --nofollow-import-to=src.seeds --nofollow-import-to=polars --output-dir=dist/
 
       - name: Prepare artifact (Linux/macOS)
         if: matrix.os != 'windows-latest'
