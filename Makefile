@@ -26,7 +26,7 @@ docs:
 	PYTHONPATH=. uv run -- typer src.cli.main utils docs --name networker --output docs/cli.md
 
 compile: create-base-db
-	uv run -- nuitka --onefile src/cli/main.py --output-filename=networker --python-flag="no_warnings" --include-data-files=pyproject.toml=pyproject.toml --noinclude-data-files=src/tests/* --noinclude-data-files=src/seeds/* --output-dir=dist/
+	uv run -- nuitka --onefile src/cli/main.py --output-filename=networker --python-flag="no_warnings" --include-data-files=pyproject.toml=pyproject.toml --noinclude-data-files=src/tests/* --noinclude-data-files=src/seeds/* --nofollow-import-to=src.seeds --nofollow-import-to=polars --output-dir=dist/
 
 create-base-db:
 	uv run -- python -m src.seeds.seed_db create_base_db

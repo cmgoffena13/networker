@@ -52,6 +52,8 @@ jobs:
             --include-data-files=pyproject.toml=pyproject.toml \
             --noinclude-data-files=src/tests/* \
             --noinclude-data-files=src/seeds/* \
+            --nofollow-import-to=src.seeds \
+            --nofollow-import-to=polars \
             --output-dir=dist/
 
       - name: Build with Nuitka (macOS)
@@ -65,8 +67,9 @@ jobs:
             --include-data-files=pyproject.toml=pyproject.toml \
             --noinclude-data-files=src/tests/* \
             --noinclude-data-files=src/seeds/* \
-            --output-dir=dist/ \
-            --macos-create-app-bundle=false
+            --nofollow-import-to=src.seeds \
+            --nofollow-import-to=polars \
+            --output-dir=dist/
 
       - name: Build with Nuitka (Windows)
         if: matrix.os == 'windows-latest'
@@ -79,6 +82,8 @@ jobs:
             --include-data-files=pyproject.toml=pyproject.toml \
             --noinclude-data-files=src/tests/* \
             --noinclude-data-files=src/seeds/* \
+            --nofollow-import-to=src.seeds \
+            --nofollow-import-to=polars \
             --output-dir=dist/
 
       - name: Prepare artifact (Linux/macOS)
