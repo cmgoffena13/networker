@@ -55,6 +55,12 @@ jobs:
             --noinclude-data-files=src/seeds/* \
             --nofollow-import-to=src.seeds \
             --nofollow-import-to=polars \
+            --nofollow-import-to=sqlalchemy.dialects.oracle \
+            --nofollow-import-to=sqlalchemy.dialects.postgresql \
+            --nofollow-import-to=sqlalchemy.dialects.mysql \
+            --nofollow-import-to=sqlalchemy.dialects.mssql \
+            --nofollow-import-to=sqlalchemy.dialects.firebird \
+            --nofollow-import-to=sqlalchemy.dialects.sybase \
             --output-dir=dist/
 
       - name: Build with Nuitka (macOS)
@@ -71,13 +77,19 @@ jobs:
             --noinclude-data-files=src/seeds/* \
             --nofollow-import-to=src.seeds \
             --nofollow-import-to=polars \
+            --nofollow-import-to=sqlalchemy.dialects.oracle \
+            --nofollow-import-to=sqlalchemy.dialects.postgresql \
+            --nofollow-import-to=sqlalchemy.dialects.mysql \
+            --nofollow-import-to=sqlalchemy.dialects.mssql \
+            --nofollow-import-to=sqlalchemy.dialects.firebird \
+            --nofollow-import-to=sqlalchemy.dialects.sybase \
             --output-dir=dist/
 
       - name: Build with Nuitka (Windows)
         if: matrix.os == 'windows-latest'
         shell: cmd
         run: |
-          uv run -- nuitka --onefile --disable-ccache src/cli/main.py --output-filename=networker.exe --python-flag="no_warnings" --include-data-files=pyproject.toml=pyproject.toml --noinclude-data-files=src/tests/* --noinclude-data-files=src/seeds/* --nofollow-import-to=src.seeds --nofollow-import-to=polars --output-dir=dist/
+          uv run -- nuitka --onefile --disable-ccache src/cli/main.py --output-filename=networker.exe --python-flag="no_warnings" --include-data-files=pyproject.toml=pyproject.toml --noinclude-data-files=src/tests/* --noinclude-data-files=src/seeds/* --nofollow-import-to=src.seeds --nofollow-import-to=polars --nofollow-import-to=sqlalchemy.dialects.oracle --nofollow-import-to=sqlalchemy.dialects.postgresql --nofollow-import-to=sqlalchemy.dialects.mysql --nofollow-import-to=sqlalchemy.dialects.mssql --nofollow-import-to=sqlalchemy.dialects.firebird --nofollow-import-to=sqlalchemy.dialects.sybase --output-dir=dist/
 
       - name: Prepare artifact (Linux/macOS)
         if: matrix.os != 'windows-latest'
@@ -90,14 +102,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           cd dist
-          $exe = Get-ChildItem -Recurse -Filter "networker.exe" | Select-Object -First 1
-          if ($exe) {
-            Move-Item $exe.FullName "${{ matrix.output_name }}.exe"
-          } else {
-            Write-Host "networker.exe not found in dist directory"
-            Get-ChildItem -Recurse dist
-            exit 1
-          }
+          move networker.exe ${{ matrix.output_name }}.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
