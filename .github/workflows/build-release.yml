@@ -90,7 +90,14 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           cd dist
-          move networker.exe ${{ matrix.output_name }}.exe
+          $exe = Get-ChildItem -Recurse -Filter "networker.exe" | Select-Object -First 1
+          if ($exe) {
+            Move-Item $exe.FullName "${{ matrix.output_name }}.exe"
+          } else {
+            Write-Host "networker.exe not found in dist directory"
+            Get-ChildItem -Recurse dist
+            exit 1
+          }
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
