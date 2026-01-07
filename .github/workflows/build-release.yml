@@ -46,7 +46,7 @@ jobs:
         run: |
           uv run -- nuitka \
             --onefile \
-            --disable-ccache \
+            --assume-yes-for-downloads \
             src/cli/main.py \
             --output-filename=networker \
             --python-flag="no_warnings" \
@@ -68,7 +68,7 @@ jobs:
         run: |
           uv run -- nuitka \
             --onefile \
-            --disable-ccache \
+            --assume-yes-for-downloads \
             src/cli/main.py \
             --output-filename=networker \
             --python-flag="no_warnings" \
@@ -89,7 +89,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: cmd
         run: |
-          uv run -- nuitka --onefile --disable-ccache src/cli/main.py --output-filename=networker.exe --python-flag="no_warnings" --include-data-files=pyproject.toml=pyproject.toml --noinclude-data-files=src/tests/* --noinclude-data-files=src/seeds/* --nofollow-import-to=src.seeds --nofollow-import-to=polars --nofollow-import-to=sqlalchemy.dialects.oracle --nofollow-import-to=sqlalchemy.dialects.postgresql --nofollow-import-to=sqlalchemy.dialects.mysql --nofollow-import-to=sqlalchemy.dialects.mssql --nofollow-import-to=sqlalchemy.dialects.firebird --nofollow-import-to=sqlalchemy.dialects.sybase --output-dir=dist/
+          uv run -- nuitka --onefile --assume-yes-for-downloads src/cli/main.py --output-filename=networker.exe --python-flag="no_warnings" --include-data-files=pyproject.toml=pyproject.toml --noinclude-data-files=src/tests/* --noinclude-data-files=src/seeds/* --nofollow-import-to=src.seeds --nofollow-import-to=polars --nofollow-import-to=sqlalchemy.dialects.oracle --nofollow-import-to=sqlalchemy.dialects.postgresql --nofollow-import-to=sqlalchemy.dialects.mysql --nofollow-import-to=sqlalchemy.dialects.mssql --nofollow-import-to=sqlalchemy.dialects.firebird --nofollow-import-to=sqlalchemy.dialects.sybase --output-dir=dist/
 
       - name: Prepare artifact (Linux/macOS)
         if: matrix.os != 'windows-latest'
