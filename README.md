@@ -2,7 +2,7 @@
 
 A simple CLI to monitor a local area network (LAN).  
 
-Check out the release artifacts for the binary/executable.
+Check out the release artifacts for the binary/executable. Once downloaded just rename to `networker`.
 
 See [CLI Documentation](docs/cli.md) for detailed command usage.
 
