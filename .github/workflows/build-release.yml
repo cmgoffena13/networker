@@ -127,13 +127,6 @@ jobs:
         with:
           path: artifacts
 
-      - name: Create checksums
-        run: |
-          cd artifacts
-          find . -type f -name "networker*" ! -name "*.sha256" | while read file; do
-            sha256sum "$file" | awk '{print $1}' > "${file}.sha256"
-          done
-
       - name: Extract version from tag
         id: tag_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
@@ -149,6 +142,7 @@ jobs:
           name: Release ${{ steps.tag_version.outputs.VERSION }}
           files: |
             artifacts/**/networker*
+          generate_release_notes: false
           draft: false
           prerelease: false
 
