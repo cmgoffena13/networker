@@ -1,5 +1,5 @@
 1. Monitor is showing the Router when its not the router IP Fix (maybe put "Internet" instead)
-    1. Do a reverse DNS lookup and cache the results per session
+    1. Do a reverse DNS lookup and cache the results per session instead, default to Internet
 2. Bold the Device Name in any output, mainly scan port output
 3. The monitor output table has massive space between timestamp and TCP/UDP column, cmon rich
 4. Add an "exclude-router" flag to the scan command
