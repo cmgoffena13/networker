@@ -6,3 +6,4 @@
 5. Remove shortcut for --id in any commands
 6. Create mapping for mDNS query names
 7. Add (Primary) to "en0" interface when there are options for the interface to monitor
+8. UDP Port 443 doesn't show as HTTPS
