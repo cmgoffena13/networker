@@ -4,3 +4,4 @@
 4. Add an "exclude-router" flag to the scan command
 5. Remove shortcut for --id in any commands
 6. Create mapping for mDNS query names
+7. Add (Primary) to "en0" interface when there are options for the interface to monitor
