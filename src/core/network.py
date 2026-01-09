@@ -291,7 +291,7 @@ def _traceroute(target_host: str) -> int:
         for _ in range(probes):
             pkt = IP(dst=target_ip, ttl=ttl) / TCP(dport=80, flags="S")
             t_start = time.time()
-            reply = sr1(pkt, verbose=0, timeout=2)
+            reply = sr1(pkt, verbose=0, timeout=2, inter=0)
             rtt = (time.time() - t_start) * 1000
 
             if reply:

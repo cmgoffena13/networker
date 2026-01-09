@@ -7,7 +7,7 @@ from typing import List, Optional, Tuple
 
 import httpx
 import structlog
-from scapy.all import ARP, IP, TCP, UDP, Ether, conf, get_if_hwaddr, sr, srp
+from scapy.all import ARP, IP, TCP, UDP, Ether, conf, get_if_hwaddr, send, sr, srp
 from tqdm import tqdm
 from typer import Abort
 
@@ -72,7 +72,9 @@ def get_router_mac() -> Optional[str]:
         broadcast = Ether(dst="ff:ff:ff:ff:ff:ff")
         arp_request_broadcast = broadcast / arp_request
 
-        answered, unanswered = srp(arp_request_broadcast, timeout=2, verbose=False)
+        answered, unanswered = srp(
+            arp_request_broadcast, timeout=2, verbose=False, inter=0
+        )
 
         if answered:
             router_mac = answered[0][1].hwsrc
@@ -133,7 +135,7 @@ def get_devices_on_network(network: Network) -> List[Device]:
     arp_request = ARP(pdst=network_range)
     broadcast = Ether(dst="ff:ff:ff:ff:ff:ff")
     arp_request_broadcast = broadcast / arp_request
-    answered, unanswered = srp(arp_request_broadcast, timeout=2, verbose=False)
+    answered, unanswered = srp(arp_request_broadcast, timeout=2, verbose=False, inter=0)
 
     current_ip = get_current_device_ip()
     seen_ips = set()
@@ -238,7 +240,9 @@ def get_open_ports(
                     IP(dst=device.ip_address) / TCP(dport=port, flags="S")
                     for port in batch
                 ]
-                answered, unanswered = sr(tcp_packets, timeout=1, verbose=False)
+                answered, unanswered = sr(
+                    tcp_packets, timeout=1, verbose=False, inter=0
+                )
                 for sent, received in answered:
                     if interrupted:
                         break
@@ -251,6 +255,10 @@ def get_open_ports(
                         )
                         device_ports.append(device_port)
                         logger.debug(f"Found open TCP port: {port} on device.")
+                        rst_pkt = IP(dst=device.ip_address) / TCP(
+                            dport=port, flags="R", seq=received[TCP].ack
+                        )
+                        send(rst_pkt, verbose=False)
 
                 if interrupted:
                     break
@@ -258,7 +266,9 @@ def get_open_ports(
                 udp_packets = [
                     IP(dst=device.ip_address) / UDP(dport=port) for port in batch
                 ]
-                answered, unanswered = sr(udp_packets, timeout=0.5, verbose=False)
+                answered, unanswered = sr(
+                    udp_packets, timeout=0.5, verbose=False, inter=0
+                )
                 for sent, received in answered:
                     if interrupted:
                         break
