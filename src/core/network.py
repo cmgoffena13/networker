@@ -395,43 +395,65 @@ def test_internet_connectivity(trace: bool = False) -> None:
             last_download = last_network_speed_test.download_speed_mbps
             last_upload = last_network_speed_test.upload_speed_mbps
 
-            if download_speed_mbps > last_download:
-                increase = ((download_speed_mbps - last_download) / last_download) * 100
+            if last_download > 0:
+                if download_speed_mbps > last_download:
+                    increase = (
+                        (download_speed_mbps - last_download) / last_download
+                    ) * 100
+                    echo(
+                        f"Download speed has increased by {increase:.1f}% "
+                        f"(from {last_download} Mbps to {download_speed_mbps} Mbps)"
+                    )
+                elif download_speed_mbps < last_download:
+                    decrease = (
+                        (last_download - download_speed_mbps) / last_download
+                    ) * 100
+                    echo(
+                        f"Download speed has decreased by {decrease:.1f}% "
+                        f"(from {last_download} Mbps to {download_speed_mbps} Mbps)"
+                    )
+            else:
                 echo(
-                    f"Download speed has increased by {increase:.1f}% "
-                    f"(from {last_download} Mbps to {download_speed_mbps} Mbps)"
-                )
-            elif download_speed_mbps < last_download:
-                decrease = ((last_download - download_speed_mbps) / last_download) * 100
-                echo(
-                    f"Download speed has decreased by {decrease:.1f}% "
-                    f"(from {last_download} Mbps to {download_speed_mbps} Mbps)"
-                )
-
-            if upload_speed_mbps > last_upload:
-                increase = ((upload_speed_mbps - last_upload) / last_upload) * 100
-                echo(
-                    f"Upload speed has increased by {increase:.1f}% "
-                    f"(from {last_upload} Mbps to {upload_speed_mbps} Mbps)"
-                )
-            elif upload_speed_mbps < last_upload:
-                decrease = ((last_upload - upload_speed_mbps) / last_upload) * 100
-                echo(
-                    f"Upload speed has decreased by {decrease:.1f}% "
-                    f"(from {last_upload} Mbps to {upload_speed_mbps} Mbps)"
+                    f"Download speed: {download_speed_mbps} Mbps "
+                    f"(previous test had 0 Mbps, cannot calculate percentage change)"
                 )
 
-            if ping_time_ms > last_ping_time:
-                increase = ((ping_time_ms - last_ping_time) / last_ping_time) * 100
+            if last_upload > 0:
+                if upload_speed_mbps > last_upload:
+                    increase = ((upload_speed_mbps - last_upload) / last_upload) * 100
+                    echo(
+                        f"Upload speed has increased by {increase:.1f}% "
+                        f"(from {last_upload} Mbps to {upload_speed_mbps} Mbps)"
+                    )
+                elif upload_speed_mbps < last_upload:
+                    decrease = ((last_upload - upload_speed_mbps) / last_upload) * 100
+                    echo(
+                        f"Upload speed has decreased by {decrease:.1f}% "
+                        f"(from {last_upload} Mbps to {upload_speed_mbps} Mbps)"
+                    )
+            else:
                 echo(
-                    f"Ping time has increased by {increase:.1f}% "
-                    f"(from {last_ping_time} ms to {ping_time_ms} ms)"
+                    f"Upload speed: {upload_speed_mbps} Mbps "
+                    f"(previous test had 0 Mbps, cannot calculate percentage change)"
                 )
-            elif ping_time_ms < last_ping_time:
-                decrease = ((last_ping_time - ping_time_ms) / last_ping_time) * 100
+
+            if last_ping_time > 0:
+                if ping_time_ms > last_ping_time:
+                    increase = ((ping_time_ms - last_ping_time) / last_ping_time) * 100
+                    echo(
+                        f"Ping time has increased by {increase:.1f}% "
+                        f"(from {last_ping_time} ms to {ping_time_ms} ms)"
+                    )
+                elif ping_time_ms < last_ping_time:
+                    decrease = ((last_ping_time - ping_time_ms) / last_ping_time) * 100
+                    echo(
+                        f"Ping time has decreased by {decrease:.1f}% "
+                        f"(from {last_ping_time} ms to {ping_time_ms} ms)"
+                    )
+            else:
                 echo(
-                    f"Ping time has decreased by {decrease:.1f}% "
-                    f"(from {last_ping_time} ms to {ping_time_ms} ms)"
+                    f"Ping time: {ping_time_ms} ms "
+                    f"(previous test had 0 ms, cannot calculate percentage change)"
                 )
 
     except SpeedtestException as e:
