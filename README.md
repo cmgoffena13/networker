@@ -1,2 +1,3 @@
 # networker
-First Rust Project - CLI inspired by my networker-py repo
+
+A simple CLI to monitor a local area network (LAN).
