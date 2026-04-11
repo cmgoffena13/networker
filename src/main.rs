@@ -20,7 +20,13 @@ enum Commands {
 
 fn main() {
     let cli = Cli::parse();
-    match cli.command {
-        Commands::Scan(scan) => scan.run(),
+
+    let result = match cli.command {
+        Commands::Scan(args) => args.run(),
+    };
+
+    if let Err(e) = result {
+        eprintln!("Error: {}", e);
+        std::process::exit(1);
     }
 }

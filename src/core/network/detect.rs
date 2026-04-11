@@ -1,5 +1,6 @@
 use if_addrs::{get_if_addrs, IfAddr};
 use std::net::{IpAddr, Ipv4Addr};
+use anyhow::{Result, bail};
 
 #[derive(Debug)]
 pub struct NetworkInfo {
@@ -9,7 +10,7 @@ pub struct NetworkInfo {
     pub interface_name: String
 }
 
-pub fn get_local_network() -> Result<NetworkInfo, Box<dyn std::error::Error>> {
+pub fn get_local_network() -> Result<NetworkInfo> {
     let ifaces = get_if_addrs()?;
 
     for iface in ifaces {
@@ -32,7 +33,7 @@ pub fn get_local_network() -> Result<NetworkInfo, Box<dyn std::error::Error>> {
         }
     }
 
-    Err("No suitable IPv4 network interface found".into())
+    bail!("No suitable IPv4 network interface found");
 }
 
 
