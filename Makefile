@@ -7,6 +7,9 @@ lint:
 test:
 	cargo test
 
+check:
+	cargo check
+
 compile:
 	cargo build --release
 

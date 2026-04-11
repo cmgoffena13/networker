@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 use cli::ScanCommand;
 
 mod cli;
+mod core;
 
 #[derive(Parser)]
 #[command(name = "networker")]
