@@ -16,7 +16,9 @@ pub async fn discover_ipv4_on_interface(
     duration: Duration,
 ) -> anyhow::Result<Vec<Device>> {
     let daemon = ServiceDaemon::new().context("ServiceDaemon::new")?;
-    daemon.disable_interface(IfKind::All).context("disable_interface All")?;
+    daemon
+        .disable_interface(IfKind::All)
+        .context("disable_interface All")?;
     daemon
         .disable_interface(IfKind::IPv6)
         .context("disable_interface IPv6")?;
@@ -24,9 +26,7 @@ pub async fn discover_ipv4_on_interface(
         .enable_interface(interface_name)
         .context("enable_interface")?;
 
-    let receiver = daemon
-        .browse(SERVICE_DISCOVERY_QUERY)
-        .context("browse")?;
+    let receiver = daemon.browse(SERVICE_DISCOVERY_QUERY).context("browse")?;
 
     let stop = tokio::time::Instant::now() + duration;
     let mut ips = HashSet::new();
