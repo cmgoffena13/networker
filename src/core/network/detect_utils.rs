@@ -2,6 +2,8 @@ use if_addrs::{get_if_addrs, IfAddr};
 use std::net::{IpAddr, Ipv4Addr};
 use anyhow::{Result, bail};
 
+// --- Network interface / LAN detection ---
+
 pub struct NetworkInfo {
     pub ip: IpAddr,
     pub netmask: IpAddr,
