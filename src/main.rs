@@ -3,6 +3,7 @@ use cli::ScanCommand;
 
 mod cli;
 mod core;
+mod tui;
 
 #[derive(Parser)]
 #[command(name = "networker")]
@@ -10,7 +11,7 @@ mod core;
 #[command(version)]
 struct Cli {
     #[command(subcommand)]
-    command: Commands,
+    command: Option<Commands>,
 }
 
 #[derive(Subcommand)]
@@ -22,7 +23,8 @@ fn main() {
     let cli = Cli::parse();
 
     let result = match cli.command {
-        Commands::Scan(args) => args.run(),
+        None => tui::run(),
+        Some(Commands::Scan(args)) => args.run(),
     };
 
     if let Err(e) = result {
